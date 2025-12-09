@@ -189,7 +189,7 @@ export const documentsController = {
         return res.status(401).json({
           success: false,
           error: 'Unauthorized',
-        });
+        }); //s
       }
 
       await documentsService.deleteDocument(documentId, req.userId);
