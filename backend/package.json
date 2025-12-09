@@ -1,0 +1,38 @@
+{
+  "name": "corpvault-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "*",
+    "cors": "*",
+    "dotenv": "*",
+    "express": "*",
+    "express-validator": "*",
+    "helmet": "*",
+    "jsonwebtoken": "*",
+    "minio": "*",
+    "morgan": "*",
+    "multer": "*",
+    "winston": "*"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "*",
+    "@types/cors": "*",
+    "@types/express": "*",
+    "@types/jsonwebtoken": "*",
+    "@types/morgan": "*",
+    "@types/multer": "*",
+    "prisma": "5.22.0",
+    "ts-node-dev": "*",
+    "typescript": "*"
+  }
+}
