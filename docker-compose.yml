@@ -14,6 +14,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corpvault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio
@@ -29,19 +34,24 @@ services:
       - minio_data:/data
     networks:
       - backend-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - postgres
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
-      API_URL: http://backend:3000
       DATABASE_URL: postgresql://corpvault:corpvault@postgres:5432/corpvault?schema=public
       JWT_SECRET: supersecret
       JWT_EXPIRE: 1h
@@ -53,13 +63,22 @@ services:
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: documents
       MINIO_USE_SSL: 'false'
-      MINIO_PUBLIC_ENDPOINT: localhost
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost:8080
       MAX_FILE_SIZE: '10485760'
-      ALLOWED_MIME_TYPES: application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain
     ports:
       - '3000:3000'
     command: ["sh", "-c", "npx prisma db push && node dist/index.js"]
+    networks:
+      - backend-net
+
+  frontend:
+    build:
+      context: ./
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
     networks:
       - backend-net
 
