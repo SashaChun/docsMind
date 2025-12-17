@@ -1,4 +1,4 @@
-FROM node:20 AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -6,8 +6,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Install Node dependencies
-COPY package.json ./
-RUN npm install
+COPY package*.json ./
+RUN npm ci --prefer-offline || npm install
 
 # Copy sources and Prisma schema
 COPY tsconfig.json ./
@@ -19,7 +19,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # --- Runtime image ---
-FROM node:20 AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
