@@ -2,9 +2,6 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install system dependencies required by Prisma (OpenSSL)
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
 # Install Node dependencies
 COPY package*.json ./
 RUN npm ci --prefer-offline || npm install
@@ -23,9 +20,6 @@ FROM node:20-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
-
-# Install system dependencies required by Prisma (OpenSSL)
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
