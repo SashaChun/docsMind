@@ -2,9 +2,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci --prefer-offline
 COPY . .
-RUN chmod +x node_modules/.bin/*
 RUN npm run build
 
 # production stage
