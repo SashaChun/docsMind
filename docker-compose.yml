@@ -59,6 +59,7 @@ services:
       JWT_REFRESH_EXPIRE: 7d
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
+      MINIO_PUBLIC_ENDPOINT: 185.233.44.234
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: documents
