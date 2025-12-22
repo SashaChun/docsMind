@@ -47,9 +47,13 @@ export const uploadFile = async (
   mimeType: string
 ): Promise<string> => {
   try {
-    const objectName = `${Date.now()}-${fileName}`;
+    // Ensure proper UTF-8 encoding for the filename
+    const sanitizedFileName = Buffer.from(fileName, 'latin1').toString('utf8');
+    const objectName = `${Date.now()}-${sanitizedFileName}`;
     
     logger.info(`Uploading file to MinIO: ${objectName}`);
+    logger.info(`Original filename: ${fileName}`);
+    logger.info(`Sanitized filename: ${sanitizedFileName}`);
     logger.info(`Buffer length: ${fileBuffer.length} bytes`);
     logger.info(`MIME type: ${mimeType}`);
     logger.info(`Is Buffer: ${Buffer.isBuffer(fileBuffer)}`);
@@ -96,7 +100,8 @@ export const deleteFile = async (fileName: string): Promise<void> => {
 export const getFileUrl = (fileName: string): string => {
   const protocol = env.MINIO_USE_SSL ? 'https' : 'http';
   const host = env.MINIO_PUBLIC_ENDPOINT || env.MINIO_ENDPOINT;
-  return `${protocol}://${host}:${env.MINIO_PORT}/${env.MINIO_BUCKET}/${fileName}`;
+  const encodedFileName = encodeURIComponent(fileName);
+  return `${protocol}://${host}:${env.MINIO_PORT}/${env.MINIO_BUCKET}/${encodedFileName}`;
 };
 
 export const getPresignedUrl = async (fileName: string, expirySeconds = 3600): Promise<string> => {
