@@ -47,13 +47,10 @@ export const uploadFile = async (
   mimeType: string
 ): Promise<string> => {
   try {
-    // Ensure proper UTF-8 encoding for the filename
-    const sanitizedFileName = Buffer.from(fileName, 'latin1').toString('utf8');
-    const objectName = `${Date.now()}-${sanitizedFileName}`;
+    const objectName = `${Date.now()}-${fileName}`;
     
     logger.info(`Uploading file to MinIO: ${objectName}`);
     logger.info(`Original filename: ${fileName}`);
-    logger.info(`Sanitized filename: ${sanitizedFileName}`);
     logger.info(`Buffer length: ${fileBuffer.length} bytes`);
     logger.info(`MIME type: ${mimeType}`);
     logger.info(`Is Buffer: ${Buffer.isBuffer(fileBuffer)}`);

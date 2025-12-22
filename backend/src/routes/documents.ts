@@ -11,7 +11,15 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // Fix UTF-8 encoding for filename
     if (file.originalname) {
-      file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      const original = file.originalname;
+      try {
+        // Try to decode if it's already UTF-8
+        const decoded = decodeURIComponent(escape(original));
+        file.originalname = decoded;
+      } catch (e) {
+        // If decoding fails, try latin1 to utf8 conversion
+        file.originalname = Buffer.from(original, 'latin1').toString('utf8');
+      }
     }
     cb(null, true);
   }
