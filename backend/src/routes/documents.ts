@@ -4,7 +4,18 @@ import { documentsController } from '../controllers/documentsController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    // Fix UTF-8 encoding for filename
+    if (file.originalname) {
+      file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    }
+    cb(null, true);
+  }
+});
 
 router.use(authMiddleware);
 
