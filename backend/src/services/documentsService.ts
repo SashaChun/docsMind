@@ -130,7 +130,14 @@ export const documentsService = {
         throw error;
       }
 
-      return document;
+      // Generate presigned URL for better encoding handling
+      const { getPresignedUrl } = await import('../utils/minio.js');
+      const presignedUrl = await getPresignedUrl(document.fileName, 3600);
+
+      return {
+        ...document,
+        fileUrl: presignedUrl,
+      };
     } catch (error) {
       logger.error('Get document error:', error);
       throw error;

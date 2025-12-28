@@ -15,6 +15,7 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [link, setLink] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   if (!isOpen || !document) return null;
 
@@ -52,8 +53,10 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
       setLink(url);
       try {
         await navigator.clipboard.writeText(url);
-      } catch {
-        // ignore clipboard errors
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        setError('Не вдалося скопіювати посилання в буфер обміну');
       }
     } catch {
       setError('Сталася помилка. Спробуйте ще раз.');
@@ -67,7 +70,18 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
     setLink('');
     setEmail('');
     setVisibility('public');
+    setCopySuccess(false);
     onClose();
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      setError('Не вдалося скопіювати посилання в буфер обміну');
+    }
   };
 
   return (
@@ -133,11 +147,18 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
           )}
 
           {link && (
-            <div className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg break-all">
-              Посилання згенеровано і скопійовано в буфер обміну:
-              <div className="mt-1 flex items-center gap-2">
-                <Link2 size={14} /> <span className="truncate flex-1">{link}</span>
+            <div className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg">
+              <div className="font-medium mb-2">Посилання згенеровано:</div>
+              <div className="bg-white border border-green-200 rounded p-2 mb-2 break-all text-xs text-slate-700 max-h-20 overflow-y-auto">
+                {link}
               </div>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="w-full px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+              >
+                {copySuccess ? '✓ Скопійовано' : 'Копіювати посилання'}
+              </button>
             </div>
           )}
 
