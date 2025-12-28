@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { uploadFile, deleteFile, getFileUrl } from '../utils/minio.js';
+import { uploadFile, deleteFile, getFileUrl, getPresignedUrl } from '../utils/minio.js';
 import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -130,8 +130,8 @@ export const documentsService = {
         throw error;
       }
 
-      // Return proxy URL through backend instead of presigned URL
-      const fileUrl = `${process.env.API_URL || 'http://localhost:3000'}/api/documents/${documentId}/file`;
+      // Generate presigned URL for direct access to MinIO
+      const fileUrl = await getPresignedUrl(document.fileName);
 
       return {
         ...document,
