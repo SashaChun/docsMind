@@ -46,6 +46,10 @@ export const DocumentEditor = () => {
         }
         
         const doc = response.data;
+        console.log('=== DOCUMENT LOADED ===');
+        console.log('mimeType:', doc.mimeType);
+        console.log('content:', doc.content);
+        console.log('fileUrl:', doc.fileUrl);
         setDocument(doc);
         setDocumentName(doc.name);
         
