@@ -26,5 +26,5 @@ export const env = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '10485760'),
-  ALLOWED_MIME_TYPES: (process.env.ALLOWED_MIME_TYPES || 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain').split(','),
+  ALLOWED_MIME_TYPES: (process.env.ALLOWED_MIME_TYPES || 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain,image/jpeg,image/png,image/gif,image/webp,video/webm').split(','),
 };

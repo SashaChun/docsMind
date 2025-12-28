@@ -1,4 +1,4 @@
-import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2 } from 'lucide-react';
+import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2, Image, Film, File } from 'lucide-react';
 import type { Document, CategoryType } from '../types';
 
 interface DocumentsListProps {
@@ -28,6 +28,24 @@ const getCategoryColor = (category: string) => {
     default:
       return 'bg-blue-50 text-blue-600';
   }
+};
+
+const getFileIcon = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+    return { icon: Image, color: 'text-pink-600 bg-pink-50' };
+  }
+  if (['webm', 'mp4', 'avi', 'mov'].includes(ext)) {
+    return { icon: Film, color: 'text-purple-600 bg-purple-50' };
+  }
+  if (['pdf'].includes(ext)) {
+    return { icon: FileText, color: 'text-red-600 bg-red-50' };
+  }
+  if (['doc', 'docx'].includes(ext)) {
+    return { icon: FileText, color: 'text-blue-600 bg-blue-50' };
+  }
+  return { icon: File, color: 'text-slate-600 bg-slate-50' };
 };
 
 export const DocumentsList = ({
@@ -85,9 +103,15 @@ export const DocumentsList = ({
                 className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative"
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <div className={`p-2.5 rounded-lg ${getCategoryColor(doc.category)}`}>
-                    <FileText size={20} />
-                  </div>
+                  {(() => {
+                    const fileInfo = getFileIcon(doc.name);
+                    const IconComponent = fileInfo.icon;
+                    return (
+                      <div className={`p-2.5 rounded-lg ${fileInfo.color}`}>
+                        <IconComponent size={20} />
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1 min-w-0">
                     <h4
                       className="font-medium text-slate-800 truncate"

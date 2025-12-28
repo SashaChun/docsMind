@@ -110,7 +110,7 @@ export const AddDocumentModal = ({
                     Натисніть або перетягніть файл
                   </p>
                   <p className="text-xs text-slate-400">
-                    Підтримуються: PDF, DOCX, DOC, TXT, JPG, PNG
+                    Підтримуються: PDF, DOCX, DOC, TXT, JPG, PNG, GIF, WEBP, WEBM
                   </p>
                 </>
               )}
@@ -118,7 +118,7 @@ export const AddDocumentModal = ({
                 type="file"
                 onChange={handleFileChange}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp,.webm"
               />
             </label>
           </div>
