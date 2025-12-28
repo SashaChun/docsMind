@@ -10,6 +10,15 @@ const minioClient = new Client({
   secretKey: env.MINIO_SECRET_KEY,
 });
 
+// Client for presigned URLs using public endpoint
+const minioPublicClient = new Client({
+  endPoint: env.MINIO_PUBLIC_ENDPOINT,
+  port: env.MINIO_PORT,
+  useSSL: env.MINIO_USE_SSL,
+  accessKey: env.MINIO_ACCESS_KEY,
+  secretKey: env.MINIO_SECRET_KEY,
+});
+
 
 export const initMinIO = async () => {
   try {
@@ -104,7 +113,13 @@ export const getFileUrl = (fileName: string): string => {
 
 export const getPresignedUrl = async (fileName: string, expirySeconds = 3600): Promise<string> => {
   try {
-    return await minioClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
+    // Try to use public client first, fallback to internal client if it fails
+    try {
+      return await minioPublicClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
+    } catch (publicError) {
+      logger.warn('Failed to generate presigned URL with public endpoint, using internal endpoint:', publicError);
+      return await minioClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
+    }
   } catch (error) {
     logger.error('Presigned URL generation error:', error);
     throw error;
