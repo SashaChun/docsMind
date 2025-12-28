@@ -144,16 +144,28 @@ export const DocumentEditor = () => {
             try {
               // Use backend proxy to avoid CORS issues
               const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+              const token = localStorage.getItem('accessToken');
+              console.log('Loading TXT file from:', proxyUrl);
+              console.log('Token exists:', !!token);
+
               const response = await fetch(proxyUrl, {
                 headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                  'Authorization': `Bearer ${token}`,
                 },
               });
+
+              console.log('TXT fetch response:', response.status, response.ok);
+
+              if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+              }
+
               const text = await response.text();
+              console.log('TXT content length:', text.length);
               editorRef.current.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`;
             } catch (textError) {
               console.error('Text file loading error:', textError);
-              editorRef.current.innerHTML = '<p>Почніть редагувати документ...</p>';
+              editorRef.current.innerHTML = '<p>Помилка завантаження файлу. Перевірте консоль.</p>';
             }
           }
           // Для інших файлів
