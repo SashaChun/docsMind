@@ -130,6 +130,7 @@ export const documentsService = {
         throw error;
       }
 
+
       // Generate public URL for direct access to MinIO (bucket is public)
       const fileUrl = getFileUrl(document.fileName);
 
