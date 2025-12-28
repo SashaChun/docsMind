@@ -54,9 +54,12 @@ export const DocumentEditor = () => {
         setDocumentName(doc.name);
         
         // Встановлюємо початковий контент
+        console.log('editorRef.current:', editorRef.current);
         if (editorRef.current) {
+          console.log('Checking content type...');
           // Якщо є збережений контент, використовуємо його
           if (doc.content) {
+            console.log('Has saved content');
             console.log('Loading saved content from database');
             editorRef.current.innerHTML = doc.content;
           }
@@ -145,6 +148,7 @@ export const DocumentEditor = () => {
           }
           // Для текстових файлів
           else if (doc.mimeType === 'text/plain') {
+            console.log('=== LOADING TXT FILE ===');
             try {
               // Use backend proxy to avoid CORS issues
               const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
