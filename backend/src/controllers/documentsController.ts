@@ -181,6 +181,43 @@ export const documentsController = {
     }
   },
 
+  async getFile(req: AuthRequest, res: Response) {
+    try {
+      const documentId = parseInt(req.params.id, 10);
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const document = await documentsService.getDocumentById(documentId, req.userId);
+      
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          error: 'Document not found',
+        });
+      }
+
+      const { getFileStream } = await import('../utils/minio.js');
+      const fileStream = await getFileStream(document.fileName);
+
+      res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+      
+      fileStream.pipe(res);
+    } catch (error: any) {
+      logger.error('Get file controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
   async delete(req: AuthRequest, res: Response) {
     try {
       const documentId = parseInt(req.params.id, 10);

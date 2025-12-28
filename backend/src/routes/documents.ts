@@ -30,6 +30,7 @@ router.use(authMiddleware);
 router.post('/', upload.single('file'), documentsController.validateUpload, documentsController.upload);
 router.get('/', documentsController.getAll);
 router.get('/:id', documentsController.getById);
+router.get('/:id/file', documentsController.getFile);
 router.put('/:id/content', documentsController.updateContent);
 router.delete('/:id', documentsController.delete);
 
