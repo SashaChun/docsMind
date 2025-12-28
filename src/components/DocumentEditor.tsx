@@ -57,12 +57,18 @@ export const DocumentEditor = () => {
             editorRef.current.innerHTML = doc.content;
           }
           // Для DOCX файлів завантажуємо та конвертуємо в HTML
-          else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+          else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
               doc.mimeType === 'application/msword') {
             try {
-              console.log('Loading DOCX from:', doc.fileUrl);
-              
-              const response = await fetch(doc.fileUrl);
+              // Use backend proxy to avoid CORS issues
+              const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+              console.log('Loading DOCX from:', proxyUrl);
+
+              const response = await fetch(proxyUrl, {
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                },
+              });
               console.log('Fetch response:', {
                 status: response.status,
                 ok: response.ok,
@@ -136,7 +142,13 @@ export const DocumentEditor = () => {
           // Для текстових файлів
           else if (doc.mimeType === 'text/plain') {
             try {
-              const response = await fetch(doc.fileUrl);
+              // Use backend proxy to avoid CORS issues
+              const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+              const response = await fetch(proxyUrl, {
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                },
+              });
               const text = await response.text();
               editorRef.current.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`;
             } catch (textError) {
