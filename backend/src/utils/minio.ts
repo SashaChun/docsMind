@@ -10,6 +10,15 @@ const minioClient = new Client({
   secretKey: env.MINIO_SECRET_KEY,
 });
 
+// Client for generating presigned URLs with public endpoint
+const minioPublicClient = new Client({
+  endPoint: env.MINIO_PUBLIC_ENDPOINT,
+  port: env.MINIO_PORT,
+  useSSL: env.MINIO_USE_SSL,
+  accessKey: env.MINIO_ACCESS_KEY,
+  secretKey: env.MINIO_SECRET_KEY,
+});
+
 export const initMinIO = async () => {
   try {
     const bucketExists = await minioClient.bucketExists(env.MINIO_BUCKET);
@@ -103,15 +112,7 @@ export const getFileUrl = (fileName: string): string => {
 
 export const getPresignedUrl = async (fileName: string, expirySeconds = 3600): Promise<string> => {
   try {
-    const presignedUrl = await minioClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
-    
-    // Replace internal hostname with public endpoint
-    if (presignedUrl.includes('minio:9000')) {
-      const protocol = env.MINIO_USE_SSL ? 'https' : 'http';
-      return presignedUrl.replace('http://minio:9000', `${protocol}://${env.MINIO_PUBLIC_ENDPOINT}:${env.MINIO_PORT}`);
-    }
-    
-    return presignedUrl;
+    return await minioPublicClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
   } catch (error) {
     logger.error('Presigned URL generation error:', error);
     throw error;
