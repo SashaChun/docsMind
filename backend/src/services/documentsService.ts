@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { uploadFile, deleteFile, getFileUrl, getPresignedUrl } from '../utils/minio.js';
+import { uploadFile, deleteFile, getFileUrl } from '../utils/minio.js';
 import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -130,8 +130,8 @@ export const documentsService = {
         throw error;
       }
 
-      // Generate presigned URL for direct access to MinIO
-      const fileUrl = await getPresignedUrl(document.fileName);
+      // Generate public URL for direct access to MinIO (bucket is public)
+      const fileUrl = getFileUrl(document.fileName);
 
       return {
         ...document,
