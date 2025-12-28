@@ -131,7 +131,7 @@ export const documentsService = {
       }
 
       // Return proxy URL through backend instead of presigned URL
-      const fileUrl = `${process.env.API_URL || 'http://localhost:3000'}/documents/${documentId}/file`;
+      const fileUrl = `${process.env.API_URL || 'http://localhost:3000'}/api/documents/${documentId}/file`;
 
       return {
         ...document,
