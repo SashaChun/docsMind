@@ -103,7 +103,15 @@ export const getFileUrl = (fileName: string): string => {
 
 export const getPresignedUrl = async (fileName: string, expirySeconds = 3600): Promise<string> => {
   try {
-    return await minioClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
+    const presignedUrl = await minioClient.presignedGetObject(env.MINIO_BUCKET, fileName, expirySeconds);
+    
+    // Replace internal hostname with public endpoint
+    if (presignedUrl.includes('minio:9000')) {
+      const protocol = env.MINIO_USE_SSL ? 'https' : 'http';
+      return presignedUrl.replace('http://minio:9000', `${protocol}://${env.MINIO_PUBLIC_ENDPOINT}:${env.MINIO_PORT}`);
+    }
+    
+    return presignedUrl;
   } catch (error) {
     logger.error('Presigned URL generation error:', error);
     throw error;
