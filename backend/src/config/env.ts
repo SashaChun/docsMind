@@ -14,14 +14,14 @@ export const env = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
   JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '7d',
   
-  MINIO_ENDPOINT: process.env.MINIO_ENDPOINT || 'localhost',
+  MINIO_ENDPOINT: process.env.MINIO_ENDPOINT || 'minio',
   MINIO_PORT: parseInt(process.env.MINIO_PORT || '9000'),
   MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY || 'minioadmin',
   MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY || 'minioadmin',
   MINIO_BUCKET: process.env.MINIO_BUCKET || 'documents',
   MINIO_USE_SSL: process.env.MINIO_USE_SSL === 'true',
   MINIO_PUBLIC_ENDPOINT:
-    process.env.MINIO_PUBLIC_ENDPOINT || process.env.MINIO_ENDPOINT || 'localhost',
+    process.env.MINIO_PUBLIC_ENDPOINT || '185.233.44.234',
   
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   

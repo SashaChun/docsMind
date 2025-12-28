@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, FileText, ExternalLink, Image, Film } from 'lucide-react';
 import { documentsApi } from '../services/api.ts';
 import type { Document } from '../types';
 
@@ -62,6 +62,10 @@ export const DocumentView = () => {
   };
 
   const createdAt = document?.createdAt || (document as any)?.date;
+
+  const isImage = document?.mimeType?.startsWith('image/');
+  const isVideo = document?.mimeType?.startsWith('video/');
+  const isPdf = document?.mimeType === 'application/pdf';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -140,11 +144,29 @@ export const DocumentView = () => {
 
             <section className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
               {document.fileUrl ? (
-                <iframe
-                  src={document.fileUrl}
-                  title={document.name}
-                  className="w-full h-full border-0"
-                />
+                isImage ? (
+                  <div className="flex-1 flex items-center justify-center bg-slate-50 p-4 overflow-auto">
+                    <img
+                      src={document.fileUrl}
+                      alt={document.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                ) : isVideo ? (
+                  <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
+                    <video
+                      src={document.fileUrl}
+                      controls
+                      className="max-w-full max-h-full"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={document.fileUrl}
+                    title={document.name}
+                    className="w-full h-full border-0"
+                  />
+                )
               ) : (
                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
                   Попередній перегляд недоступний
