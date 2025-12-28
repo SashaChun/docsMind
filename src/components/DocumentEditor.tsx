@@ -29,22 +29,23 @@ export const DocumentEditor = () => {
   const [error, setError] = useState('');
   const [document, setDocument] = useState<any>(null);
 
+  // Завантаження документа
   useEffect(() => {
     const loadDocument = async () => {
       if (!id) return;
-      
+
       setLoading(true);
       setError('');
-      
+
       try {
         const response = await documentsApi.getById(parseInt(id));
-        
+
         if (!response.success || !response.data) {
           setError(response.error || 'Не вдалося завантажити документ');
           setLoading(false);
           return;
         }
-        
+
         const doc = response.data;
         console.log('=== DOCUMENT LOADED ===');
         console.log('mimeType:', doc.mimeType);
@@ -52,145 +53,122 @@ export const DocumentEditor = () => {
         console.log('fileUrl:', doc.fileUrl);
         setDocument(doc);
         setDocumentName(doc.name);
-        
-        // Встановлюємо початковий контент
-        console.log('editorRef.current:', editorRef.current);
-        if (editorRef.current) {
-          console.log('Checking content type...');
-          // Якщо є збережений контент, використовуємо його
-          if (doc.content) {
-            console.log('Has saved content');
-            console.log('Loading saved content from database');
-            editorRef.current.innerHTML = doc.content;
-          }
-          // Для DOCX файлів завантажуємо та конвертуємо в HTML
-          else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-              doc.mimeType === 'application/msword') {
-            try {
-              // Use backend proxy to avoid CORS issues
-              const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
-              console.log('Loading DOCX from:', proxyUrl);
-
-              const response = await fetch(proxyUrl, {
-                headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
-              });
-              console.log('Fetch response:', {
-                status: response.status,
-                ok: response.ok,
-                contentType: response.headers.get('content-type'),
-                contentLength: response.headers.get('content-length'),
-              });
-              
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              
-              const arrayBuffer = await response.arrayBuffer();
-              console.log('ArrayBuffer size:', arrayBuffer.byteLength);
-              
-              if (arrayBuffer.byteLength === 0) {
-                throw new Error('Файл порожній (0 байт)');
-              }
-              
-              if (arrayBuffer.byteLength < 100) {
-                throw new Error(`Файл занадто малий (${arrayBuffer.byteLength} байт). DOCX файли мають бути мінімум 5-10 KB. Можливо, ви хотіли створити .txt файл?`);
-              }
-              
-              const result = await mammoth.convertToHtml({ arrayBuffer });
-              console.log('Mammoth conversion result:', {
-                htmlLength: result.value.length,
-                messagesCount: result.messages.length,
-              });
-              
-              if (result.value && result.value.trim().length > 0) {
-                editorRef.current.innerHTML = result.value;
-              } else {
-                editorRef.current.innerHTML = '<p>Документ порожній або не містить текстового контенту.</p>';
-              }
-              
-              if (result.messages.length > 0) {
-                console.warn('Mammoth conversion warnings:', result.messages);
-              }
-            } catch (conversionError) {
-              console.error('DOCX conversion error:', conversionError);
-              editorRef.current.innerHTML = `
-                <div style="padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px;">
-                  <p style="margin: 0; color: #991b1b;">
-                    <strong>Помилка:</strong> ${conversionError instanceof Error ? conversionError.message : 'Не вдалося завантажити вміст DOCX файлу'}
-                  </p>
-                  <p style="margin-top: 10px; font-size: 12px; color: #991b1b;">
-                    URL: ${doc.fileUrl}
-                  </p>
-                </div>
-                <h2>Ваші нотатки</h2>
-                <p>Почніть додавати нотатки до цього документа...</p>
-              `;
-            }
-          }
-          // Для PDF файлів показуємо повідомлення
-          else if (doc.mimeType === 'application/pdf') {
-            editorRef.current.innerHTML = `
-              <div style="padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <p style="margin: 0; color: #64748b;">
-                  <strong>Примітка:</strong> Редагування PDF файлів поки не підтримується. 
-                  Ви можете створити текстовий документ або завантажити новий файл.
-                </p>
-              </div>
-              <h2>Опис документа</h2>
-              <p>Назва: ${doc.name}</p>
-              <p>Категорія: ${doc.category}</p>
-              <p>Дата створення: ${new Date(doc.createdAt).toLocaleDateString()}</p>
-              <h2>Ваші нотатки</h2>
-              <p>Почніть додавати нотатки до цього документа...</p>
-            `;
-          }
-          // Для текстових файлів
-          else if (doc.mimeType === 'text/plain') {
-            console.log('=== LOADING TXT FILE ===');
-            try {
-              // Use backend proxy to avoid CORS issues
-              const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
-              const token = localStorage.getItem('accessToken');
-              console.log('Loading TXT file from:', proxyUrl);
-              console.log('Token exists:', !!token);
-
-              const response = await fetch(proxyUrl, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
-
-              console.log('TXT fetch response:', response.status, response.ok);
-
-              if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-              }
-
-              const text = await response.text();
-              console.log('TXT content length:', text.length);
-              editorRef.current.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`;
-            } catch (textError) {
-              console.error('Text file loading error:', textError);
-              editorRef.current.innerHTML = '<p>Помилка завантаження файлу. Перевірте консоль.</p>';
-            }
-          }
-          // Для інших файлів
-          else {
-            editorRef.current.innerHTML = '<p>Почніть редагувати документ...</p>';
-          }
-        }
-        
         setLoading(false);
       } catch (err) {
         setError('Сталася помилка при завантаженні документа');
         setLoading(false);
       }
     };
-    
+
     loadDocument();
   }, [id]);
+
+  // Завантаження контенту після того як редактор готовий
+  useEffect(() => {
+    const loadContent = async () => {
+      if (!document || loading || !editorRef.current) return;
+
+      console.log('=== LOADING CONTENT ===');
+      const doc = document;
+
+      // Якщо є збережений контент, використовуємо його
+      if (doc.content) {
+        console.log('Loading saved content from database');
+        editorRef.current.innerHTML = doc.content;
+      }
+      // Для DOCX файлів завантажуємо та конвертуємо в HTML
+      else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+          doc.mimeType === 'application/msword') {
+        try {
+          const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+          console.log('Loading DOCX from:', proxyUrl);
+
+          const response = await fetch(proxyUrl, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+
+          if (arrayBuffer.byteLength === 0) {
+            throw new Error('Файл порожній (0 байт)');
+          }
+
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+
+          if (result.value && result.value.trim().length > 0) {
+            editorRef.current.innerHTML = result.value;
+          } else {
+            editorRef.current.innerHTML = '<p>Документ порожній або не містить текстового контенту.</p>';
+          }
+        } catch (conversionError) {
+          console.error('DOCX conversion error:', conversionError);
+          editorRef.current.innerHTML = `
+            <div style="padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px;">
+              <p style="margin: 0; color: #991b1b;">
+                <strong>Помилка:</strong> ${conversionError instanceof Error ? conversionError.message : 'Не вдалося завантажити вміст DOCX файлу'}
+              </p>
+            </div>
+            <p>Почніть додавати нотатки до цього документа...</p>
+          `;
+        }
+      }
+      // Для PDF файлів показуємо повідомлення
+      else if (doc.mimeType === 'application/pdf') {
+        editorRef.current.innerHTML = `
+          <div style="padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <p style="margin: 0; color: #64748b;">
+              <strong>Примітка:</strong> Редагування PDF файлів поки не підтримується.
+            </p>
+          </div>
+          <h2>Опис документа</h2>
+          <p>Назва: ${doc.name}</p>
+          <p>Категорія: ${doc.category}</p>
+          <h2>Ваші нотатки</h2>
+          <p>Почніть додавати нотатки до цього документа...</p>
+        `;
+      }
+      // Для текстових файлів
+      else if (doc.mimeType === 'text/plain') {
+        console.log('=== LOADING TXT FILE ===');
+        try {
+          const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+          const token = localStorage.getItem('accessToken');
+          console.log('Loading TXT file from:', proxyUrl);
+
+          const response = await fetch(proxyUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          console.log('TXT fetch response:', response.status, response.ok);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+          }
+
+          const text = await response.text();
+          console.log('TXT content length:', text.length);
+          editorRef.current.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${text}</pre>`;
+        } catch (textError) {
+          console.error('Text file loading error:', textError);
+          editorRef.current.innerHTML = '<p>Помилка завантаження файлу.</p>';
+        }
+      }
+      // Для інших файлів
+      else {
+        editorRef.current.innerHTML = '<p>Почніть редагувати документ...</p>';
+      }
+    };
+
+    loadContent();
+  }, [document, loading, id]);
 
   const handleBack = () => {
     navigate(-1);
