@@ -51,6 +51,12 @@ const getFileIcon = (fileName: string) => {
   return { icon: File, color: 'text-slate-600 bg-slate-50' };
 };
 
+const isEditableFile = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  // Тільки текстові файли та документи можна редагувати
+  return ['txt', 'doc', 'docx'].includes(ext);
+};
+
 export const DocumentsList = ({
   documents,
   folders = [],
@@ -134,13 +140,15 @@ export const DocumentsList = ({
         >
           Перегляд
         </button>
-        <button
-          onClick={() => onEdit(doc)}
-          className="px-3 py-1.5 rounded-md text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors flex items-center gap-1"
-          title="Редагувати документ"
-        >
-          <Edit size={14} />
-        </button>
+        {isEditableFile(doc.name) && (
+          <button
+            onClick={() => onEdit(doc)}
+            className="px-3 py-1.5 rounded-md text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors flex items-center gap-1"
+            title="Редагувати документ"
+          >
+            <Edit size={14} />
+          </button>
+        )}
         <button
           onClick={() => onShare(doc)}
           className="px-3 py-1.5 rounded-md text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-1"
