@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, ExternalLink, Image, Film } from 'lucide-react';
+import { ArrowLeft, FileText, ExternalLink, Edit3 } from 'lucide-react';
 import { documentsApi } from '../services/api.ts';
+import mammoth from 'mammoth';
 import type { Document } from '../types';
 
 type DocumentWithFile = Document & {
@@ -20,6 +21,9 @@ export const DocumentView = () => {
   const [document, setDocument] = useState<DocumentWithFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [docxContent, setDocxContent] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +55,67 @@ export const DocumentView = () => {
     load();
   }, [id]);
 
+  // Завантаження та конвертація DOCX/DOC файлів
+  useEffect(() => {
+    const loadDocxContent = async () => {
+      if (!document || !id) return;
+
+      const isDocx = document.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const isDoc = document.mimeType === 'application/msword';
+
+      if (!isDocx && !isDoc) return;
+
+      // Якщо є збережений контент, використовуємо його
+      if ((document as any).content) {
+        setDocxContent((document as any).content);
+        return;
+      }
+
+      setDocxLoading(true);
+      setDocxError('');
+
+      try {
+        const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
+
+        const response = await fetch(proxyUrl, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (arrayBuffer.byteLength === 0) {
+          throw new Error('Файл порожній');
+        }
+
+        if (isDoc) {
+          // Старий .doc формат - mammoth не підтримує повністю
+          setDocxError('Старий формат .doc підтримується частково. Рекомендуємо конвертувати файл у .docx');
+        }
+
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+
+        if (result.value && result.value.trim().length > 0) {
+          setDocxContent(result.value);
+        } else {
+          setDocxContent('<p style="color: #64748b; text-align: center;">Документ порожній або не містить текстового контенту.</p>');
+        }
+      } catch (err) {
+        console.error('DOCX conversion error:', err);
+        setDocxError(err instanceof Error ? err.message : 'Не вдалося завантажити документ');
+      } finally {
+        setDocxLoading(false);
+      }
+    };
+
+    loadDocxContent();
+  }, [document, id]);
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -61,11 +126,19 @@ export const DocumentView = () => {
     }
   };
 
+  const handleEdit = () => {
+    if (id) {
+      navigate(`/documents/${id}/edit`);
+    }
+  };
+
   const createdAt = document?.createdAt || (document as any)?.date;
 
   const isImage = document?.mimeType?.startsWith('image/');
   const isVideo = document?.mimeType?.startsWith('video/');
   const isPdf = document?.mimeType === 'application/pdf';
+  const isDocx = document?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const isDoc = document?.mimeType === 'application/msword';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -124,14 +197,23 @@ export const DocumentView = () => {
                 </div>
               </div>
 
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-col gap-2">
+                {(isDocx || isDoc) && (
+                  <button
+                    onClick={handleEdit}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                  >
+                    <Edit3 size={14} />
+                    Редагувати
+                  </button>
+                )}
                 <button
                   onClick={handleOpenInNewTab}
                   disabled={!document.fileUrl}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ExternalLink size={14} />
-                  Відкрити в новій вкладці
+                  Завантажити файл
                 </button>
               </div>
 
@@ -143,7 +225,40 @@ export const DocumentView = () => {
             </section>
 
             <section className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-              {document.fileUrl ? (
+              {(isDocx || isDoc) ? (
+                <div className="flex-1 overflow-auto p-6 md:p-8">
+                  {docxLoading ? (
+                    <div className="flex items-center justify-center h-full text-slate-400">
+                      Завантаження документа...
+                    </div>
+                  ) : docxError && !docxContent ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                      <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm max-w-md text-center">
+                        {docxError}
+                      </div>
+                      <button
+                        onClick={handleEdit}
+                        className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+                      >
+                        Відкрити в редакторі
+                      </button>
+                    </div>
+                  ) : docxContent ? (
+                    <div className="prose prose-slate max-w-none">
+                      {docxError && (
+                        <div className="mb-4 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+                          {docxError}
+                        </div>
+                      )}
+                      <div dangerouslySetInnerHTML={{ __html: docxContent }} />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-400">
+                      Документ порожній
+                    </div>
+                  )}
+                </div>
+              ) : document.fileUrl ? (
                 isImage ? (
                   <div className="flex-1 flex items-center justify-center bg-slate-50 p-4 overflow-auto">
                     <img
