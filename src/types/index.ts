@@ -13,7 +13,8 @@ export interface Document {
   companyId: number;
   name: string;
   category: 'statutory' | 'tax' | 'personal';
-  date: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface SharedData {

@@ -90,7 +90,7 @@ function App() {
   };
 
   const handleAddDocument = async (
-    newDocData: Omit<Document, 'id' | 'companyId' | 'date'>,
+    newDocData: Omit<Document, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>,
     file: File
   ) => {
     if (!selectedCompanyId) return;

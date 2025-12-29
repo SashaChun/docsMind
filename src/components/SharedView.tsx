@@ -77,8 +77,8 @@ export const SharedView = ({ sharedData, onExit }: SharedViewProps) => {
                     </h2>
                     <p className="text-slate-500 text-sm mt-1">
                       {sharedData.item?.category} • Завантажено{' '}
-                      {sharedData.item?.date
-                        ? new Date(sharedData.item.date).toLocaleDateString()
+                      {sharedData.item?.createdAt
+                        ? new Date(sharedData.item.createdAt).toLocaleDateString()
                         : ''}
                     </p>
                   </div>

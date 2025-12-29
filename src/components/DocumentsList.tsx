@@ -120,7 +120,7 @@ export const DocumentsList = ({
                       {doc.name}
                     </h4>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {new Date(doc.date).toLocaleDateString()}
+                      {new Date(doc.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

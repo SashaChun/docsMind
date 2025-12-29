@@ -140,7 +140,7 @@ export const DocumentView = () => {
     }
   };
 
-  const createdAt = document?.createdAt || (document as any)?.date;
+  const createdAt = document?.createdAt;
 
   const isImage = document?.mimeType?.startsWith('image/');
   const isVideo = document?.mimeType?.startsWith('video/');

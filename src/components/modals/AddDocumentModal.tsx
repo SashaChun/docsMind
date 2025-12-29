@@ -5,7 +5,7 @@ import type { Document } from '../../types';
 interface AddDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (doc: Omit<Document, 'id' | 'companyId' | 'date'>, file: File) => void;
+  onSubmit: (doc: Omit<Document, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>, file: File) => void;
 }
 
 export const AddDocumentModal = ({
@@ -40,7 +40,7 @@ export const AddDocumentModal = ({
       return;
     }
 
-    const doc: Omit<Document, 'id' | 'companyId' | 'date'> = {
+    const doc: Omit<Document, 'id' | 'companyId' | 'createdAt' | 'updatedAt'> = {
       name: formData.get('docName') as string,
       category: formData.get('category') as 'statutory' | 'tax' | 'personal',
     };
