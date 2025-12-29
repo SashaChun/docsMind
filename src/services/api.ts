@@ -146,6 +146,52 @@ class ApiClient {
       };
     }
   }
+
+  async uploadMultipleFiles<T>(
+    endpoint: string,
+    files: File[],
+    additionalData: Record<string, string>
+  ): Promise<ApiResponse<T>> {
+    try {
+      console.log('uploadMultipleFiles called with:', {
+        endpoint,
+        filesCount: files.length,
+        files: files.map(f => ({ name: f.name, size: f.size, type: f.type })),
+        additionalData,
+      });
+
+      const formData = new FormData();
+
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          Authorization: this.token ? `Bearer ${this.token}` : '',
+        } as HeadersInit,
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Upload failed',
+      };
+    }
+  }
 }
 
 export const apiClient = new ApiClient(API_URL);
@@ -181,10 +227,24 @@ export const documentsApi = {
       companyId: companyId.toString(),
     }),
 
+  uploadMultiple: (files: File[], name: string, category: string, companyId: number) =>
+    apiClient.uploadMultipleFiles('/documents/multiple', files, {
+      name,
+      category,
+      companyId: companyId.toString(),
+    }),
+
   getAll: (companyId?: number, category?: string, page = 1, limit = 20) => {
     let query = `/documents?page=${page}&limit=${limit}`;
     if (companyId) query += `&companyId=${companyId}`;
     if (category && category !== 'all') query += `&category=${category}`;
+    return apiClient.get(query);
+  },
+
+  getFolders: (companyId?: number, category?: string) => {
+    let query = '/documents/folders?';
+    if (companyId) query += `companyId=${companyId}&`;
+    if (category && category !== 'all') query += `category=${category}`;
     return apiClient.get(query);
   },
 
@@ -194,6 +254,8 @@ export const documentsApi = {
     apiClient.put(`/documents/${id}/content`, { content }),
 
   delete: (id: number) => apiClient.delete(`/documents/${id}`),
+
+  deleteFolder: (id: number) => apiClient.delete(`/documents/folders/${id}`),
 };
 
 export const sharesApi = {

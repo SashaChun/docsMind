@@ -18,6 +18,7 @@ model User {
 
   companies Company[]
   documents Document[]
+  folders   Folder[]
   shares    Share[]
 
   @@map("users")
@@ -37,9 +38,26 @@ model Company {
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents Document[]
+  folders   Folder[]
   shares    Share[]
 
   @@map("companies")
+}
+
+model Folder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String   @default("personal")
+  companyId Int
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("folders")
 }
 
 model Document {
@@ -53,11 +71,13 @@ model Document {
   content   String? @db.Text
   companyId Int
   userId    Int
+  folderId  Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
   shares    Share[]
 
   @@map("documents")

@@ -8,6 +8,7 @@ export interface CreateDocumentRequest {
   name: string;
   category: string;
   companyId: number;
+  folderName?: string;
 }
 
 export const documentsService = {
@@ -55,6 +56,76 @@ export const documentsService = {
     }
   },
 
+  async uploadMultipleDocuments(
+    userId: number,
+    data: CreateDocumentRequest,
+    files: Express.Multer.File[]
+  ) {
+    try {
+      const company = await prisma.company.findFirst({
+        where: {
+          id: data.companyId,
+          userId,
+        },
+      });
+
+      if (!company) {
+        const error = new Error('Company not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      let folderId: number | null = null;
+
+      // Якщо файлів більше одного - створюємо папку
+      if (files.length > 1) {
+        const folder = await prisma.folder.create({
+          data: {
+            name: data.folderName || data.name,
+            category: data.category,
+            companyId: data.companyId,
+            userId,
+          },
+        });
+        folderId = folder.id;
+        logger.info(`Folder created: ${folder.name} with ${files.length} files`);
+      }
+
+      const uploadedDocuments = [];
+
+      for (const file of files) {
+        const fileName = await uploadFile(file.originalname, file.buffer, file.mimetype);
+        const fileUrl = getFileUrl(fileName);
+
+        const document = await prisma.document.create({
+          data: {
+            name: file.originalname,
+            category: data.category,
+            fileName,
+            fileUrl,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            companyId: data.companyId,
+            userId,
+            folderId,
+          },
+        });
+
+        uploadedDocuments.push(document);
+        logger.info(`Document uploaded: ${document.name} for company ${company.name}`);
+      }
+
+      return {
+        documents: uploadedDocuments,
+        folderId,
+        folderName: folderId ? (data.folderName || data.name) : null,
+      };
+    } catch (error) {
+      logger.error('Upload multiple documents error:', error);
+      throw error;
+    }
+  },
+
   async getDocuments(
     userId: number,
     companyId?: number,
@@ -86,6 +157,12 @@ export const documentsService = {
                 name: true,
               },
             },
+            folder: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         }),
@@ -103,6 +180,88 @@ export const documentsService = {
       };
     } catch (error) {
       logger.error('Get documents error:', error);
+      throw error;
+    }
+  },
+
+  async getFolders(
+    userId: number,
+    companyId?: number,
+    category?: string
+  ) {
+    try {
+      const where: any = { userId };
+
+      if (companyId) {
+        where.companyId = companyId;
+      }
+
+      if (category && category !== 'all') {
+        where.category = category;
+      }
+
+      const folders = await prisma.folder.findMany({
+        where,
+        include: {
+          documents: {
+            select: {
+              id: true,
+              name: true,
+              mimeType: true,
+              fileSize: true,
+              createdAt: true,
+            },
+          },
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return folders;
+    } catch (error) {
+      logger.error('Get folders error:', error);
+      throw error;
+    }
+  },
+
+  async deleteFolder(folderId: number, userId: number) {
+    try {
+      const folder = await prisma.folder.findFirst({
+        where: {
+          id: folderId,
+          userId,
+        },
+        include: {
+          documents: true,
+        },
+      });
+
+      if (!folder) {
+        const error = new Error('Folder not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      // Видаляємо всі файли з MinIO
+      for (const doc of folder.documents) {
+        await deleteFile(doc.fileName);
+      }
+
+      // Видаляємо папку (документи видаляться каскадно)
+      await prisma.folder.delete({
+        where: { id: folderId },
+      });
+
+      logger.info(`Folder deleted: ${folder.name} with ${folder.documents.length} documents`);
+
+      return { success: true };
+    } catch (error: any) {
+      logger.error('Delete folder error:', error);
       throw error;
     }
   },

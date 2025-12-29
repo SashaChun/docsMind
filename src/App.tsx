@@ -15,12 +15,13 @@ import { DocumentView } from './components/DocumentView.tsx';
 import { ShareDocumentView } from './components/ShareDocumentView.tsx';
 import { DocumentEditor } from './components/DocumentEditor.tsx';
 import { companiesApi, documentsApi, apiClient } from './services/api.ts';
-import type { Company, Document, CategoryType, SharedData } from './types';
+import type { Company, Document, CategoryType, SharedData, Folder } from './types';
 
 function App() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
   const [sharedData, setSharedData] = useState<SharedData | null>(null);
@@ -51,6 +52,11 @@ function App() {
       const documentsRes = await documentsApi.getAll();
       if (documentsRes.success && documentsRes.data) {
         setDocuments(documentsRes.data.documents);
+      }
+
+      const foldersRes = await documentsApi.getFolders();
+      if (foldersRes.success && foldersRes.data) {
+        setFolders(foldersRes.data);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -111,6 +117,40 @@ function App() {
     }
   };
 
+  const handleAddMultipleDocuments = async (
+    name: string,
+    category: string,
+    files: File[]
+  ) => {
+    if (!selectedCompanyId) return;
+
+    try {
+      const response = await documentsApi.uploadMultiple(
+        files,
+        name,
+        category,
+        selectedCompanyId
+      );
+      if (response.success && response.data) {
+        // Додаємо всі завантажені документи
+        const newDocs = response.data.documents || [];
+        setDocuments([...documents, ...newDocs]);
+
+        // Якщо була створена папка - перезавантажуємо папки
+        if (response.data.folderId) {
+          const foldersRes = await documentsApi.getFolders();
+          if (foldersRes.success && foldersRes.data) {
+            setFolders(foldersRes.data);
+          }
+        }
+
+        setShowDocModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to upload multiple documents:', error);
+    }
+  };
+
   const handleShareFile = (doc: Document) => {
     setShareDocument(doc);
     setShowShareModal(true);
@@ -146,6 +186,22 @@ function App() {
     } catch (error) {
       console.error('Failed to delete document:', error);
       alert('Не вдалося видалити документ');
+    }
+  };
+
+  const handleDeleteFolder = async (folder: Folder) => {
+    try {
+      const response = await documentsApi.deleteFolder(folder.id);
+      if (response.success) {
+        setFolders(folders.filter(f => f.id !== folder.id));
+        // Видаляємо також документи, що були в папці
+        setDocuments(documents.filter(d => d.folderId !== folder.id));
+      } else {
+        alert('Помилка при видаленні папки: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Failed to delete folder:', error);
+      alert('Не вдалося видалити папку');
     }
   };
 
@@ -200,6 +256,7 @@ function App() {
               <Dashboard
                 companies={companies}
                 documents={documents}
+                folders={folders}
                 selectedCompanyId={selectedCompanyId}
                 activeCategory={activeCategory}
                 onSelectCompany={setSelectedCompanyId}
@@ -210,6 +267,7 @@ function App() {
                   setActiveCategory('all');
                   setCompanies([]);
                   setDocuments([]);
+                  setFolders([]);
                   navigate('/login');
                 }}
                 onAddCompany={() => setShowAddModal(true)}
@@ -220,6 +278,7 @@ function App() {
                 onViewDoc={handleViewDocument}
                 onEditDoc={handleEditDocument}
                 onDeleteDoc={handleDeleteDocument}
+                onDeleteFolder={handleDeleteFolder}
               />
 
               <AddCompanyModal
@@ -242,6 +301,7 @@ function App() {
                 isOpen={showDocModal}
                 onClose={() => setShowDocModal(false)}
                 onSubmit={handleAddDocument}
+                onSubmitMultiple={handleAddMultipleDocuments}
               />
               <ShareDocumentModal
                 isOpen={showShareModal}

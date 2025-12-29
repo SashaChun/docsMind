@@ -28,10 +28,13 @@ const upload = multer({
 router.use(authMiddleware);
 
 router.post('/', upload.single('file'), documentsController.validateUpload, documentsController.upload);
+router.post('/multiple', upload.array('files', 20), documentsController.validateMultipleUpload, documentsController.uploadMultiple);
 router.get('/', documentsController.getAll);
+router.get('/folders', documentsController.getFolders);
 router.get('/:id', documentsController.getById);
 router.get('/:id/file', documentsController.getFile);
 router.put('/:id/content', documentsController.updateContent);
 router.delete('/:id', documentsController.delete);
+router.delete('/folders/:id', documentsController.deleteFolder);
 
 export default router;

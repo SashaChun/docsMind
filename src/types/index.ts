@@ -8,11 +8,30 @@ export interface Company {
   email: string;
 }
 
+export interface Folder {
+  id: number;
+  name: string;
+  category: 'statutory' | 'tax' | 'personal';
+  companyId: number;
+  createdAt: string;
+  updatedAt?: string;
+  documents?: Document[];
+  company?: {
+    id: number;
+    name: string;
+  };
+}
+
 export interface Document {
   id: number;
   companyId: number;
   name: string;
   category: 'statutory' | 'tax' | 'personal';
+  folderId?: number | null;
+  folder?: {
+    id: number;
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt?: string;
 }

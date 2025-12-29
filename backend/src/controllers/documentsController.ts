@@ -228,7 +228,7 @@ export const documentsController = {
         return res.status(401).json({
           success: false,
           error: 'Unauthorized',
-        }); //s
+        });
       }
 
       await documentsService.deleteDocument(documentId, req.userId);
@@ -239,6 +239,156 @@ export const documentsController = {
       });
     } catch (error: any) {
       logger.error('Delete document controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  validateMultipleUpload: [
+    body('name').notEmpty().withMessage('Folder/Document name is required'),
+    body('category').notEmpty().withMessage('Category is required'),
+    body('companyId').isInt().withMessage('Valid company ID is required'),
+  ],
+
+  async uploadMultiple(req: AuthRequest, res: Response) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: errors.array(),
+        });
+      }
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'At least one file is required',
+        });
+      }
+
+      const files = req.files as Express.Multer.File[];
+
+      logger.info('Multiple file upload details:', {
+        count: files.length,
+        files: files.map(f => ({
+          originalname: f.originalname,
+          mimetype: f.mimetype,
+          size: f.size,
+        })),
+      });
+
+      // Перевірка розміру та типів файлів
+      for (const file of files) {
+        if (file.size === 0 || !file.buffer || file.buffer.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: `File "${file.originalname}" is empty`,
+          });
+        }
+
+        if (file.size > env.MAX_FILE_SIZE) {
+          return res.status(400).json({
+            success: false,
+            error: `File "${file.originalname}" exceeds maximum size limit`,
+          });
+        }
+
+        if (!env.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return res.status(400).json({
+            success: false,
+            error: `File type not allowed for "${file.originalname}"`,
+          });
+        }
+      }
+
+      const result = await documentsService.uploadMultipleDocuments(
+        req.userId,
+        {
+          name: req.body.name,
+          category: req.body.category,
+          companyId: parseInt(req.body.companyId, 10),
+          folderName: req.body.name,
+        },
+        files
+      );
+
+      res.status(201).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error('Upload multiple documents controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  async getFolders(req: AuthRequest, res: Response) {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
+      const category = (req.query.category as string) || undefined;
+
+      const folders = await documentsService.getFolders(
+        req.userId,
+        companyId,
+        category
+      );
+
+      res.status(200).json({
+        success: true,
+        data: folders,
+      });
+    } catch (error: any) {
+      logger.error('Get folders controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  async deleteFolder(req: AuthRequest, res: Response) {
+    try {
+      const folderId = parseInt(req.params.id, 10);
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      await documentsService.deleteFolder(folderId, req.userId);
+
+      res.json({
+        success: true,
+        message: 'Folder deleted successfully',
+      });
+    } catch (error: any) {
+      logger.error('Delete folder controller error:', error);
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({
         success: false,

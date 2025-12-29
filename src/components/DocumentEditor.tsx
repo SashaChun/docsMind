@@ -27,7 +27,7 @@ export const DocumentEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [document, setDocument] = useState<any>(null);
+  const [currentDoc, setCurrentDoc] = useState<any>(null);
 
   // Завантаження документа
   useEffect(() => {
@@ -51,7 +51,7 @@ export const DocumentEditor = () => {
         console.log('mimeType:', doc.mimeType);
         console.log('content:', doc.content);
         console.log('fileUrl:', doc.fileUrl);
-        setDocument(doc);
+        setCurrentDoc(doc);
         setDocumentName(doc.name);
         setLoading(false);
       } catch (err) {
@@ -66,10 +66,10 @@ export const DocumentEditor = () => {
   // Завантаження контенту після того як редактор готовий
   useEffect(() => {
     const loadContent = async () => {
-      if (!document || loading || !editorRef.current) return;
+      if (!currentDoc || loading || !editorRef.current) return;
 
       console.log('=== LOADING CONTENT ===');
-      const doc = document;
+      const doc = currentDoc;
 
       // Якщо є збережений контент, використовуємо його
       if (doc.content) {
@@ -184,7 +184,7 @@ export const DocumentEditor = () => {
     };
 
     loadContent();
-  }, [document, loading, id]);
+  }, [currentDoc, loading, id]);
 
   const handleBack = () => {
     navigate(-1);
@@ -271,9 +271,9 @@ export const DocumentEditor = () => {
                 className="text-sm font-medium text-slate-800 bg-transparent border-none outline-none focus:ring-0 w-full md:w-auto"
                 placeholder="Назва документа"
               />
-              {document && (
+              {currentDoc && (
                 <span className="text-xs text-slate-400">
-                  {document.company?.name} • {document.category}
+                  {currentDoc.company?.name} • {currentDoc.category}
                 </span>
               )}
             </div>

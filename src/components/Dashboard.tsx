@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Company, Document, CategoryType } from '../types';
+import type { Company, Document, CategoryType, Folder } from '../types';
 import { Sidebar } from './Sidebar.tsx';
 import { MobileHeader } from './MobileHeader.tsx';
 import { CompaniesGrid } from './CompaniesGrid.tsx';
@@ -9,6 +9,7 @@ import { DocumentsList } from './DocumentsList.tsx';
 interface DashboardProps {
   companies: Company[];
   documents: Document[];
+  folders?: Folder[];
   selectedCompanyId: number | null;
   activeCategory: CategoryType;
   onSelectCompany: (id: number | null) => void;
@@ -22,11 +23,13 @@ interface DashboardProps {
   onViewDoc: (doc: Document) => void;
   onEditDoc: (doc: Document) => void;
   onDeleteDoc: (doc: Document) => void;
+  onDeleteFolder?: (folder: Folder) => void;
 }
 
 export const Dashboard = ({
   companies,
   documents,
+  folders = [],
   selectedCompanyId,
   activeCategory,
   onSelectCompany,
@@ -40,6 +43,7 @@ export const Dashboard = ({
   onViewDoc,
   onEditDoc,
   onDeleteDoc,
+  onDeleteFolder,
 }: DashboardProps) => {
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
@@ -51,6 +55,15 @@ export const Dashboard = ({
         (activeCategory === 'all' || d.category === activeCategory)
     );
   }, [selectedCompanyId, documents, activeCategory]);
+
+  const filteredFolders = useMemo(() => {
+    if (!selectedCompanyId) return [];
+    return folders.filter(
+      (f) =>
+        f.companyId === selectedCompanyId &&
+        (activeCategory === 'all' || f.category === activeCategory)
+    );
+  }, [selectedCompanyId, folders, activeCategory]);
 
   return (
     <div className="flex h-screen bg-[#F8FAFC]">
@@ -86,6 +99,7 @@ export const Dashboard = ({
 
             <DocumentsList
               documents={filteredDocs}
+              folders={filteredFolders}
               activeCategory={activeCategory}
               onCategoryChange={onCategoryChange}
               onUpload={onUploadDoc}
@@ -93,6 +107,7 @@ export const Dashboard = ({
               onView={onViewDoc}
               onEdit={onEditDoc}
               onDelete={onDeleteDoc}
+              onDeleteFolder={onDeleteFolder}
             />
           </div>
         ) : null}
