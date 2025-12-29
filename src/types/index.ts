@@ -32,6 +32,8 @@ export interface Document {
     id: number;
     name: string;
   } | null;
+  mimeType?: string;
+  fileName?: string;
   createdAt: string;
   updatedAt?: string;
 }

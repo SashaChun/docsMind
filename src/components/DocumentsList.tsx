@@ -51,9 +51,20 @@ const getFileIcon = (fileName: string) => {
   return { icon: File, color: 'text-slate-600 bg-slate-50' };
 };
 
-const isEditableFile = (fileName: string) => {
+const isEditableFile = (doc: Document) => {
+  // Перевіряємо по mimeType
+  if (doc.mimeType) {
+    const editableMimeTypes = [
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    return editableMimeTypes.includes(doc.mimeType);
+  }
+
+  // Fallback - перевіряємо по розширенню файлу
+  const fileName = doc.fileName || doc.name;
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  // Тільки текстові файли та документи можна редагувати
   return ['txt', 'doc', 'docx'].includes(ext);
 };
 
@@ -140,7 +151,7 @@ export const DocumentsList = ({
         >
           Перегляд
         </button>
-        {isEditableFile(doc.name) && (
+        {isEditableFile(doc) && (
           <button
             onClick={() => onEdit(doc)}
             className="px-3 py-1.5 rounded-md text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors flex items-center gap-1"

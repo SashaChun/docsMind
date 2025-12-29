@@ -12,3 +12,4 @@ export { AddDocumentModal } from './modals/AddDocumentModal.tsx';
 export { ShareDocumentModal } from './modals/ShareDocumentModal.tsx';
 export { ProfileScreen } from './ProfileScreen.tsx';
 export { DocumentEditor } from './DocumentEditor.tsx';
+export { ReceivedShares } from './ReceivedShares.tsx';

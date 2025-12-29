@@ -9,6 +9,7 @@ import {
   AddDocumentModal,
   ShareDocumentModal,
   ProfileScreen,
+  ReceivedShares,
 } from './components';
 import { EditCompanyModal } from './components/modals/EditCompanyModal.tsx';
 import { DocumentView } from './components/DocumentView.tsx';
@@ -245,6 +246,31 @@ function App() {
         element={
           <RequireAuth>
             <ProfileScreen />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/received"
+        element={
+          <RequireAuth>
+            <ReceivedShares
+              companies={companies}
+              onSelectCompany={(id) => {
+                setSelectedCompanyId(id);
+                if (id !== null) {
+                  navigate('/');
+                }
+              }}
+              onLogout={() => {
+                apiClient.clearToken();
+                setSelectedCompanyId(null);
+                setActiveCategory('all');
+                setCompanies([]);
+                setDocuments([]);
+                setFolders([]);
+                navigate('/login');
+              }}
+            />
           </RequireAuth>
         }
       />
