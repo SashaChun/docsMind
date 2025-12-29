@@ -5,9 +5,10 @@ interface CompanyInfoProps {
   company: Company;
   onBack: () => void;
   onShare: () => void;
+  onEdit: () => void;
 }
 
-export const CompanyInfo = ({ company, onBack, onShare }: CompanyInfoProps) => {
+export const CompanyInfo = ({ company, onBack, onShare, onEdit }: CompanyInfoProps) => {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
   };
@@ -31,7 +32,9 @@ export const CompanyInfo = ({ company, onBack, onShare }: CompanyInfoProps) => {
           >
             <Share2 size={14} /> Пакет
           </button>
-          <button className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+          <button 
+            onClick={onEdit}
+            className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
             Редагувати
           </button>
         </div>

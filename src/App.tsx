@@ -10,6 +10,7 @@ import {
   ShareDocumentModal,
   ProfileScreen,
 } from './components';
+import { EditCompanyModal } from './components/modals/EditCompanyModal.tsx';
 import { DocumentView } from './components/DocumentView.tsx';
 import { ShareDocumentView } from './components/ShareDocumentView.tsx';
 import { DocumentEditor } from './components/DocumentEditor.tsx';
@@ -24,6 +25,8 @@ function App() {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
   const [sharedData, setSharedData] = useState<SharedData | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editCompany, setEditCompany] = useState<Company | null>(null);
   const [showDocModal, setShowDocModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -65,6 +68,24 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to add company:', error);
+    }
+  };
+
+  const handleEditCompany = (company: Company) => {
+    setEditCompany(company);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateCompany = async (id: number, updatedData: Omit<Company, 'id'>) => {
+    try {
+      const response = await companiesApi.update(id, updatedData);
+      if (response.success && response.data) {
+        setCompanies(companies.map(c => c.id === id ? response.data : c));
+        setShowEditModal(false);
+        setEditCompany(null);
+      }
+    } catch (error) {
+      console.error('Failed to update company:', error);
     }
   };
 
@@ -192,6 +213,7 @@ function App() {
                   navigate('/login');
                 }}
                 onAddCompany={() => setShowAddModal(true)}
+                onEditCompany={handleEditCompany}
                 onUploadDoc={() => setShowDocModal(true)}
                 onShareDoc={handleShareFile}
                 onShareFolder={handleShareFolder}
@@ -204,6 +226,16 @@ function App() {
                 isOpen={showAddModal}
                 onClose={() => setShowAddModal(false)}
                 onSubmit={handleAddCompany}
+              />
+
+              <EditCompanyModal
+                isOpen={showEditModal}
+                company={editCompany}
+                onClose={() => {
+                  setShowEditModal(false);
+                  setEditCompany(null);
+                }}
+                onSubmit={handleUpdateCompany}
               />
 
               <AddDocumentModal

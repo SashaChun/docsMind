@@ -93,9 +93,11 @@ export const DocumentView = () => {
           throw new Error('Файл порожній');
         }
 
+        // Старий .doc формат не підтримується mammoth.js
         if (isDoc) {
-          // Старий .doc формат - mammoth не підтримує повністю
-          setDocxError('Старий формат .doc підтримується частково. Рекомендуємо конвертувати файл у .docx');
+          setDocxError('Старий формат .doc не підтримується для перегляду. Будь ласка, конвертуйте файл у .docx формат або завантажте його для перегляду в Microsoft Word.');
+          setDocxLoading(false);
+          return;
         }
 
         const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -105,9 +107,15 @@ export const DocumentView = () => {
         } else {
           setDocxContent('<p style="color: #64748b; text-align: center;">Документ порожній або не містить текстового контенту.</p>');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('DOCX conversion error:', err);
-        setDocxError(err instanceof Error ? err.message : 'Не вдалося завантажити документ');
+        // Перевіряємо чи це помилка JSZip (невалідний DOCX)
+        const errorMessage = err?.message || '';
+        if (errorMessage.includes('central directory') || errorMessage.includes('zip')) {
+          setDocxError('Не вдалося відкрити файл. Можливо, це старий формат .doc або файл пошкоджений. Спробуйте конвертувати його у .docx.');
+        } else {
+          setDocxError(errorMessage || 'Не вдалося завантажити документ');
+        }
       } finally {
         setDocxLoading(false);
       }

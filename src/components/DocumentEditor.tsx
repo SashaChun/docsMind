@@ -76,9 +76,20 @@ export const DocumentEditor = () => {
         console.log('Loading saved content from database');
         editorRef.current.innerHTML = doc.content;
       }
+      // Для старого .doc формату - показуємо повідомлення
+      else if (doc.mimeType === 'application/msword') {
+        editorRef.current.innerHTML = `
+          <div style="padding: 20px; background: #fef3cd; border-radius: 8px; border: 1px solid #ffc107; margin-bottom: 20px;">
+            <p style="margin: 0; color: #856404;">
+              <strong>Увага:</strong> Старий формат .doc не підтримується для редагування. Будь ласка, конвертуйте файл у .docx формат.
+            </p>
+          </div>
+          <h2>Ваші нотатки</h2>
+          <p>Почніть додавати нотатки до цього документа...</p>
+        `;
+      }
       // Для DOCX файлів завантажуємо та конвертуємо в HTML
-      else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-          doc.mimeType === 'application/msword') {
+      else if (doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         try {
           const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/${id}/file`;
           console.log('Loading DOCX from:', proxyUrl);
@@ -106,12 +117,17 @@ export const DocumentEditor = () => {
           } else {
             editorRef.current.innerHTML = '<p>Документ порожній або не містить текстового контенту.</p>';
           }
-        } catch (conversionError) {
+        } catch (conversionError: any) {
           console.error('DOCX conversion error:', conversionError);
+          const errorMessage = conversionError?.message || '';
+          const displayError = errorMessage.includes('central directory') || errorMessage.includes('zip')
+            ? 'Не вдалося відкрити файл. Можливо, файл пошкоджений.'
+            : (conversionError instanceof Error ? conversionError.message : 'Не вдалося завантажити вміст DOCX файлу');
+
           editorRef.current.innerHTML = `
             <div style="padding: 20px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px;">
               <p style="margin: 0; color: #991b1b;">
-                <strong>Помилка:</strong> ${conversionError instanceof Error ? conversionError.message : 'Не вдалося завантажити вміст DOCX файлу'}
+                <strong>Помилка:</strong> ${displayError}
               </p>
             </div>
             <p>Почніть додавати нотатки до цього документа...</p>

@@ -15,6 +15,7 @@ interface DashboardProps {
   onCategoryChange: (category: CategoryType) => void;
   onLogout: () => void;
   onAddCompany: () => void;
+  onEditCompany: (company: Company) => void;
   onUploadDoc: () => void;
   onShareDoc: (doc: Document) => void;
   onShareFolder: (company: Company) => void;
@@ -32,6 +33,7 @@ export const Dashboard = ({
   onCategoryChange,
   onLogout,
   onAddCompany,
+  onEditCompany,
   onUploadDoc,
   onShareDoc,
   onShareFolder,
@@ -79,6 +81,7 @@ export const Dashboard = ({
               company={selectedCompany}
               onBack={() => onSelectCompany(null)}
               onShare={() => onShareFolder(selectedCompany)}
+              onEdit={() => onEditCompany(selectedCompany)}
             />
 
             <DocumentsList
