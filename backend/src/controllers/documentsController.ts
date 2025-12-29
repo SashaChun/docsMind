@@ -205,7 +205,9 @@ export const documentsController = {
       const fileStream = await getFileStream(document.fileName);
 
       res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+      // Кодуємо ім'я файлу для підтримки кирилиці (RFC 5987)
+      const encodedFileName = encodeURIComponent(document.fileName).replace(/'/g, '%27');
+      res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodedFileName}`);
       
       fileStream.pipe(res);
     } catch (error: any) {
