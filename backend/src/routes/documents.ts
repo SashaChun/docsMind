@@ -29,11 +29,13 @@ router.use(authMiddleware);
 
 router.post('/', upload.single('file'), documentsController.validateUpload, documentsController.upload);
 router.post('/multiple', upload.array('files', 20), documentsController.validateMultipleUpload, documentsController.uploadMultiple);
+router.post('/folders', documentsController.validateCreateFolder, documentsController.createFolder);
 router.get('/', documentsController.getAll);
 router.get('/folders', documentsController.getFolders);
 router.get('/:id', documentsController.getById);
 router.get('/:id/file', documentsController.getFile);
 router.put('/:id/content', documentsController.updateContent);
+router.put('/:id/move', documentsController.moveToFolder);
 router.delete('/:id', documentsController.delete);
 router.delete('/folders/:id', documentsController.deleteFolder);
 

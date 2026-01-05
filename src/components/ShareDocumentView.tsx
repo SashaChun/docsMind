@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Download, AlertCircle, Image, Film, File } from 'lucide-react';
+import { ArrowLeft, FileText, Download, AlertCircle, Image, Film, File, Folder, ChevronRight } from 'lucide-react';
 import { sharesApi } from '../services/api.ts';
-import type { SharePayload } from '../types';
+import type { SharePayload, SharedDocumentInfo } from '../types';
 import mammoth from 'mammoth';
+
+interface ExtendedShareData {
+  share: {
+    token: string;
+    type: string;
+    expiresAt: string;
+    accessCount: number;
+    targetEmail?: string | null;
+  };
+  document?: SharedDocumentInfo;
+  folder?: {
+    id: number;
+    name: string;
+    category: string;
+    createdAt: string;
+    company?: { id: number; name: string };
+    documents: SharedDocumentInfo[];
+  };
+  documents?: SharedDocumentInfo[];
+}
 
 export const ShareDocumentView = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<SharePayload | null>(null);
+  const [data, setData] = useState<ExtendedShareData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [docxContent, setDocxContent] = useState<string | null>(null);
   const [docxLoading, setDocxLoading] = useState(false);
   const [docxError, setDocxError] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState<SharedDocumentInfo | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -31,7 +52,12 @@ export const ShareDocumentView = () => {
       if (!response.success || !response.data) {
         setError(response.error || 'Не вдалося завантажити документ');
       } else {
-        setData(response.data as SharePayload);
+        const shareData = response.data as ExtendedShareData;
+        setData(shareData);
+        // Для одиночного документа - встановлюємо як вибраний
+        if (shareData.document) {
+          setSelectedDoc(shareData.document);
+        }
       }
 
       setLoading(false);
@@ -43,16 +69,21 @@ export const ShareDocumentView = () => {
   // Завантаження та конвертація DOCX файлів
   useEffect(() => {
     const loadDocxContent = async () => {
-      if (!data?.document) return;
+      if (!selectedDoc) return;
 
-      const doc = data.document;
+      const doc = selectedDoc;
       const isDocx = doc.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const isDoc = doc.mimeType === 'application/msword';
 
-      if (!isDocx && !isDoc) return;
+      if (!isDocx && !isDoc) {
+        setDocxContent(null);
+        setDocxError('');
+        return;
+      }
 
       setDocxLoading(true);
       setDocxError('');
+      setDocxContent(null);
 
       try {
         const response = await fetch(doc.fileUrl);
@@ -94,37 +125,46 @@ export const ShareDocumentView = () => {
     };
 
     loadDocxContent();
-  }, [data]);
+  }, [selectedDoc]);
 
   const handleBack = () => {
-    navigate(-1);
+    if (selectedDoc && (data?.folder || data?.documents)) {
+      setSelectedDoc(null);
+    } else {
+      navigate(-1);
+    }
   };
 
-  const document = data?.document;
   const share = data?.share;
-  const isPrivate = share?.type === 'document_private';
+  const isPrivate = share?.type?.includes('private');
+  const isFolder = share?.type?.includes('folder');
+  const isMultiple = share?.type?.includes('multiple');
 
   const currentUserEmail = localStorage.getItem('userEmail');
   const canViewPrivate = !isPrivate || (currentUserEmail && share?.targetEmail && currentUserEmail.toLowerCase() === share.targetEmail.toLowerCase());
   const needsAuth = isPrivate && !currentUserEmail;
   const wrongUser = isPrivate && currentUserEmail && share?.targetEmail && currentUserEmail.toLowerCase() !== share.targetEmail.toLowerCase();
 
-  const handleDownload = () => {
-    if (document?.fileUrl) {
+  // Отримуємо список документів залежно від типу шерінгу
+  const documentsList: SharedDocumentInfo[] = data?.folder?.documents || data?.documents || (data?.document ? [data.document] : []);
+
+  const handleDownload = (doc?: SharedDocumentInfo) => {
+    const docToDownload = doc || selectedDoc;
+    if (docToDownload?.fileUrl) {
       const link = window.document.createElement('a');
-      link.href = document.fileUrl;
-      link.download = document.name;
+      link.href = docToDownload.fileUrl;
+      link.download = docToDownload.name;
       link.click();
     }
   };
 
   // Визначення типу файлу
-  const isImage = document?.mimeType?.startsWith('image/');
-  const isVideo = document?.mimeType?.startsWith('video/');
-  const isPdf = document?.mimeType === 'application/pdf';
-  const isDocx = document?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  const isDoc = document?.mimeType === 'application/msword';
-  const isText = document?.mimeType === 'text/plain';
+  const isImage = selectedDoc?.mimeType?.startsWith('image/');
+  const isVideo = selectedDoc?.mimeType?.startsWith('video/');
+  const isPdf = selectedDoc?.mimeType === 'application/pdf';
+  const isDocx = selectedDoc?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const isDoc = selectedDoc?.mimeType === 'application/msword';
+  const isText = selectedDoc?.mimeType === 'text/plain';
 
   const getFileIcon = () => {
     if (isImage) return <Image size={22} />;
@@ -141,8 +181,85 @@ export const ShareDocumentView = () => {
     return 'bg-slate-50 text-slate-600';
   };
 
+  const getFileIconForDoc = (doc: SharedDocumentInfo) => {
+    const mimeType = doc.mimeType || '';
+    if (mimeType.startsWith('image/')) return <Image size={18} className="text-pink-600" />;
+    if (mimeType.startsWith('video/')) return <Film size={18} className="text-purple-600" />;
+    if (mimeType === 'application/pdf') return <FileText size={18} className="text-red-600" />;
+    if (mimeType.includes('word')) return <FileText size={18} className="text-blue-600" />;
+    return <File size={18} className="text-slate-600" />;
+  };
+
+  const renderDocumentsList = () => {
+    return (
+      <div className="flex-1 p-6 overflow-auto">
+        <div className="mb-4 flex items-center gap-3">
+          {isFolder && data?.folder && (
+            <>
+              <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600">
+                <Folder size={24} />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800">{data.folder.name}</h2>
+                <p className="text-xs text-slate-500">{documentsList.length} файлів</p>
+              </div>
+            </>
+          )}
+          {isMultiple && (
+            <>
+              <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
+                <FileText size={24} />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800">Документи</h2>
+                <p className="text-xs text-slate-500">{documentsList.length} файлів</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {documentsList.map((doc) => (
+            <div
+              key={doc.id}
+              className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => setSelectedDoc(doc)}
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-slate-50">
+                  {getFileIconForDoc(doc)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-slate-800 text-sm truncate" title={doc.name}>
+                    {doc.name}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {new Date(doc.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <ChevronRight size={18} className="text-slate-400" />
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(doc);
+                  }}
+                  className="flex-1 py-1.5 rounded-md text-xs font-medium bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1"
+                >
+                  <Download size={14} />
+                  Завантажити
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderPreview = () => {
-    if (!document?.fileUrl) {
+    if (!selectedDoc?.fileUrl) {
       return (
         <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
           Попередній перегляд недоступний
@@ -155,8 +272,8 @@ export const ShareDocumentView = () => {
       return (
         <div className="flex-1 flex items-center justify-center bg-slate-100 p-4 overflow-auto">
           <img
-            src={document.fileUrl}
-            alt={document.name}
+            src={selectedDoc.fileUrl}
+            alt={selectedDoc.name}
             className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
           />
         </div>
@@ -168,7 +285,7 @@ export const ShareDocumentView = () => {
       return (
         <div className="flex-1 flex items-center justify-center bg-slate-900 p-4">
           <video
-            src={document.fileUrl}
+            src={selectedDoc.fileUrl}
             controls
             className="max-w-full max-h-full rounded-lg"
           />
@@ -190,7 +307,7 @@ export const ShareDocumentView = () => {
                 {docxError}
               </div>
               <button
-                onClick={handleDownload}
+                onClick={() => handleDownload()}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 flex items-center gap-2"
               >
                 <Download size={16} />
@@ -214,8 +331,8 @@ export const ShareDocumentView = () => {
     if (isPdf) {
       return (
         <iframe
-          src={document.fileUrl}
-          title={document.name}
+          src={selectedDoc.fileUrl}
+          title={selectedDoc.name}
           className="w-full h-full border-0"
         />
       );
@@ -224,7 +341,7 @@ export const ShareDocumentView = () => {
     // Текстові файли
     if (isText) {
       return (
-        <TextFilePreview fileUrl={document.fileUrl} />
+        <TextFilePreview fileUrl={selectedDoc.fileUrl} />
       );
     }
 
@@ -234,7 +351,7 @@ export const ShareDocumentView = () => {
         <File size={48} className="opacity-30" />
         <p>Попередній перегляд недоступний для цього типу файлу</p>
         <button
-          onClick={handleDownload}
+          onClick={() => handleDownload()}
           className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 flex items-center gap-2"
         >
           <Download size={16} />
@@ -242,6 +359,13 @@ export const ShareDocumentView = () => {
         </button>
       </div>
     );
+  };
+
+  const getShareTitle = () => {
+    if (isFolder && data?.folder) return data.folder.name;
+    if (isMultiple) return `${documentsList.length} документів`;
+    if (selectedDoc) return selectedDoc.name;
+    return 'Документ';
   };
 
   return (
@@ -252,7 +376,7 @@ export const ShareDocumentView = () => {
           className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft size={18} />
-          <span>Назад</span>
+          <span>{selectedDoc && (isFolder || isMultiple) ? 'До списку' : 'Назад'}</span>
         </button>
         {share && (
           <div className="text-[11px] text-slate-400">
@@ -265,7 +389,7 @@ export const ShareDocumentView = () => {
       <main className="flex-1 p-4 md:p-6 flex flex-col gap-4 md:gap-6 max-w-6xl w-full mx-auto">
         {loading && (
           <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-            Завантаження документа...
+            Завантаження...
           </div>
         )}
 
@@ -284,28 +408,28 @@ export const ShareDocumentView = () => {
           </div>
         )}
 
-        {!loading && !error && document && (
+        {!loading && !error && data && (
           <>
             {needsAuth ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-md">
                   <div className="flex items-start gap-3 mb-4">
-                    <div className={`p-3 rounded-xl ${getIconBgColor()}`}>
-                      {getFileIcon()}
+                    <div className={`p-3 rounded-xl ${isFolder ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                      {isFolder ? <Folder size={22} /> : <FileText size={22} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h1 className="font-semibold text-slate-900 text-base break-words">
-                        {document.name}
+                        {getShareTitle()}
                       </h1>
                       <p className="text-xs text-slate-500 mt-1">
-                        Завантажено {new Date(document.createdAt).toLocaleDateString()}
+                        {documentsList.length} файлів
                       </p>
                     </div>
                   </div>
                   <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4">
                     <p className="font-medium mb-1">Приватне посилання</p>
                     <p className="text-xs">
-                      Цей документ доступний лише для {share?.targetEmail}.
+                      Цей контент доступний лише для {share?.targetEmail}.
                       Будь ласка, увійдіть з цим email для перегляду.
                     </p>
                   </div>
@@ -321,12 +445,12 @@ export const ShareDocumentView = () => {
               <div className="flex-1 flex flex-col items-center justify-center gap-4">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-md">
                   <div className="flex items-start gap-3 mb-4">
-                    <div className={`p-3 rounded-xl ${getIconBgColor()}`}>
-                      {getFileIcon()}
+                    <div className={`p-3 rounded-xl ${isFolder ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                      {isFolder ? <Folder size={22} /> : <FileText size={22} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h1 className="font-semibold text-slate-900 text-base break-words">
-                        {document.name}
+                        {getShareTitle()}
                       </h1>
                     </div>
                   </div>
@@ -335,7 +459,7 @@ export const ShareDocumentView = () => {
                     <div>
                       <p className="font-medium mb-1">Доступ заборонено</p>
                       <p className="text-xs">
-                        Цей документ призначений для {share?.targetEmail}.
+                        Цей контент призначений для {share?.targetEmail}.
                         Ви увійшли як {currentUserEmail}.
                       </p>
                     </div>
@@ -348,7 +472,12 @@ export const ShareDocumentView = () => {
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : (isFolder || isMultiple) && !selectedDoc ? (
+              // Показуємо список документів для папки або множинного шерінгу
+              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                {renderDocumentsList()}
+              </div>
+            ) : selectedDoc ? (
               <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-[calc(100vh-140px)]">
                 <section className="lg:w-80 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 flex flex-col gap-3">
                   <div className="flex items-start gap-3">
@@ -357,14 +486,14 @@ export const ShareDocumentView = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h1 className="font-semibold text-slate-900 text-sm md:text-base break-words">
-                        {document.name}
+                        {selectedDoc.name}
                       </h1>
                       <p className="text-xs text-slate-500 mt-1">
-                        Завантажено {new Date(document.createdAt).toLocaleDateString()}
+                        Завантажено {new Date(selectedDoc.createdAt).toLocaleDateString()}
                       </p>
-                      {document.company?.name && (
+                      {selectedDoc.company?.name && (
                         <p className="text-xs text-slate-500 mt-1">
-                          Компанія: {document.company.name}
+                          Компанія: {selectedDoc.company.name}
                         </p>
                       )}
                       {isPrivate && (
@@ -377,8 +506,8 @@ export const ShareDocumentView = () => {
 
                   <div className="mt-2 flex gap-2">
                     <button
-                      onClick={handleDownload}
-                      disabled={!document.fileUrl}
+                      onClick={() => handleDownload()}
+                      disabled={!selectedDoc.fileUrl}
                       className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Download size={14} />
@@ -386,9 +515,9 @@ export const ShareDocumentView = () => {
                     </button>
                   </div>
 
-                  {document.mimeType && (
+                  {selectedDoc.mimeType && (
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Тип: {document.mimeType.split('/').pop()}
+                      Тип: {selectedDoc.mimeType.split('/').pop()}
                     </p>
                   )}
                 </section>
@@ -397,7 +526,7 @@ export const ShareDocumentView = () => {
                   {renderPreview()}
                 </section>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </main>

@@ -12,6 +12,8 @@ import {
   ReceivedShares,
 } from './components';
 import { EditCompanyModal } from './components/modals/EditCompanyModal.tsx';
+import { ShareFolderModal } from './components/modals/ShareFolderModal.tsx';
+import { ShareMultipleModal } from './components/modals/ShareMultipleModal.tsx';
 import { DocumentView } from './components/DocumentView.tsx';
 import { ShareDocumentView } from './components/ShareDocumentView.tsx';
 import { DocumentEditor } from './components/DocumentEditor.tsx';
@@ -33,6 +35,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareDocument, setShareDocument] = useState<Document | null>(null);
+  const [showShareFolderModal, setShowShareFolderModal] = useState(false);
+  const [shareFolder, setShareFolder] = useState<Folder | null>(null);
+  const [showShareMultipleModal, setShowShareMultipleModal] = useState(false);
+  const [shareMultipleDocs, setShareMultipleDocs] = useState<Document[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -168,6 +174,51 @@ function App() {
     alert('Посилання скопійовано! (Зараз відкриється режим перегляду для гостя)');
     navigate('/shared');
   };
+
+  const handleShareDocFolder = (folder: Folder) => {
+    setShareFolder(folder);
+    setShowShareFolderModal(true);
+  };
+
+  const handleShareMultipleDocs = (docs: Document[]) => {
+    setShareMultipleDocs(docs);
+    setShowShareMultipleModal(true);
+  };
+
+  const handleMoveDocToFolder = async (documentId: number, folderId: number | null) => {
+    try {
+      const response = await documentsApi.moveToFolder(documentId, folderId);
+      if (response.success && response.data) {
+        // Оновлюємо документ в стейті
+        setDocuments(documents.map(d =>
+          d.id === documentId
+            ? { ...d, folderId: folderId, folder: response.data.folder }
+            : d
+        ));
+      } else {
+        alert('Помилка при переміщенні документа: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Failed to move document:', error);
+      alert('Не вдалося перемістити документ');
+    }
+  };
+
+  const handleCreateFolder = async (name: string, category: string) => {
+    if (!selectedCompanyId) return;
+
+    try {
+      const response = await documentsApi.createFolder(name, category, selectedCompanyId);
+      if (response.success && response.data) {
+        setFolders([...folders, response.data]);
+      } else {
+        alert('Помилка при створенні папки: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+      alert('Не вдалося створити папку');
+    }
+  };
   const handleViewDocument = (doc: Document) => {
     navigate(`/documents/${doc.id}`);
   };
@@ -301,10 +352,14 @@ function App() {
                 onUploadDoc={() => setShowDocModal(true)}
                 onShareDoc={handleShareFile}
                 onShareFolder={handleShareFolder}
+                onShareDocFolder={handleShareDocFolder}
+                onShareMultipleDocs={handleShareMultipleDocs}
                 onViewDoc={handleViewDocument}
                 onEditDoc={handleEditDocument}
                 onDeleteDoc={handleDeleteDocument}
                 onDeleteFolder={handleDeleteFolder}
+                onMoveDocToFolder={handleMoveDocToFolder}
+                onCreateFolder={handleCreateFolder}
               />
 
               <AddCompanyModal
@@ -333,6 +388,22 @@ function App() {
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
                 document={shareDocument}
+              />
+              <ShareFolderModal
+                isOpen={showShareFolderModal}
+                onClose={() => {
+                  setShowShareFolderModal(false);
+                  setShareFolder(null);
+                }}
+                folder={shareFolder}
+              />
+              <ShareMultipleModal
+                isOpen={showShareMultipleModal}
+                onClose={() => {
+                  setShowShareMultipleModal(false);
+                  setShareMultipleDocs([]);
+                }}
+                documents={shareMultipleDocs}
               />
             </>
           </RequireAuth>

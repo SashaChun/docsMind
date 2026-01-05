@@ -20,10 +20,14 @@ interface DashboardProps {
   onUploadDoc: () => void;
   onShareDoc: (doc: Document) => void;
   onShareFolder: (company: Company) => void;
+  onShareDocFolder?: (folder: Folder) => void;
+  onShareMultipleDocs?: (docs: Document[]) => void;
   onViewDoc: (doc: Document) => void;
   onEditDoc: (doc: Document) => void;
   onDeleteDoc: (doc: Document) => void;
   onDeleteFolder?: (folder: Folder) => void;
+  onMoveDocToFolder?: (documentId: number, folderId: number | null) => void;
+  onCreateFolder?: (name: string, category: string) => void;
 }
 
 export const Dashboard = ({
@@ -40,10 +44,14 @@ export const Dashboard = ({
   onUploadDoc,
   onShareDoc,
   onShareFolder,
+  onShareDocFolder,
+  onShareMultipleDocs,
   onViewDoc,
   onEditDoc,
   onDeleteDoc,
   onDeleteFolder,
+  onMoveDocToFolder,
+  onCreateFolder,
 }: DashboardProps) => {
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
@@ -104,10 +112,14 @@ export const Dashboard = ({
               onCategoryChange={onCategoryChange}
               onUpload={onUploadDoc}
               onShare={onShareDoc}
+              onShareFolder={onShareDocFolder}
+              onShareMultiple={onShareMultipleDocs}
               onView={onViewDoc}
               onEdit={onEditDoc}
               onDelete={onDeleteDoc}
               onDeleteFolder={onDeleteFolder}
+              onMoveToFolder={onMoveDocToFolder}
+              onCreateFolder={onCreateFolder}
             />
           </div>
         ) : null}

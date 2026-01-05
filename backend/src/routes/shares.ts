@@ -11,7 +11,21 @@ router.post(
   shareController.createDocumentShare
 );
 
+router.post(
+  '/folder/:id',
+  authMiddleware,
+  shareController.validateCreateFolderShare,
+  shareController.createFolderShare
+);
+
+router.post(
+  '/multiple',
+  authMiddleware,
+  shareController.validateCreateMultipleShare,
+  shareController.createMultipleShare
+);
+
 router.get('/received', authMiddleware, shareController.getReceived);
-router.get('/:token', optionalAuth, shareController.getByToken);
+router.get('/:token', optionalAuth, shareController.getByTokenExtended);
 
 export default router;

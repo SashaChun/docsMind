@@ -364,4 +364,100 @@ export const documentsService = {
       throw error;
     }
   },
+
+  async moveDocumentToFolder(documentId: number, userId: number, folderId: number | null) {
+    try {
+      const document = await prisma.document.findFirst({
+        where: {
+          id: documentId,
+          userId,
+        },
+      });
+
+      if (!document) {
+        const error = new Error('Document not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      // Якщо folderId вказано, перевіряємо чи папка існує і належить користувачу
+      if (folderId !== null) {
+        const folder = await prisma.folder.findFirst({
+          where: {
+            id: folderId,
+            userId,
+          },
+        });
+
+        if (!folder) {
+          const error = new Error('Folder not found');
+          (error as any).statusCode = 404;
+          throw error;
+        }
+
+        // Перевіряємо, що документ і папка належать одній компанії
+        if (folder.companyId !== document.companyId) {
+          const error = new Error('Document and folder must belong to the same company');
+          (error as any).statusCode = 400;
+          throw error;
+        }
+      }
+
+      const updatedDocument = await prisma.document.update({
+        where: { id: documentId },
+        data: {
+          folderId,
+          updatedAt: new Date(),
+        },
+        include: {
+          folder: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      logger.info(`Document moved: ${document.name} to folder ${folderId || 'root'}`);
+
+      return updatedDocument;
+    } catch (error: any) {
+      logger.error('Move document to folder error:', error);
+      throw error;
+    }
+  },
+
+  async createFolder(userId: number, data: { name: string; category: string; companyId: number }) {
+    try {
+      const company = await prisma.company.findFirst({
+        where: {
+          id: data.companyId,
+          userId,
+        },
+      });
+
+      if (!company) {
+        const error = new Error('Company not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      const folder = await prisma.folder.create({
+        data: {
+          name: data.name,
+          category: data.category,
+          companyId: data.companyId,
+          userId,
+        },
+      });
+
+      logger.info(`Folder created: ${folder.name}`);
+
+      return folder;
+    } catch (error: any) {
+      logger.error('Create folder error:', error);
+      throw error;
+    }
+  },
 };

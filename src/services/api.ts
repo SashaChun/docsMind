@@ -253,6 +253,12 @@ export const documentsApi = {
   updateContent: (id: number, content: string) =>
     apiClient.put(`/documents/${id}/content`, { content }),
 
+  moveToFolder: (documentId: number, folderId: number | null) =>
+    apiClient.put(`/documents/${documentId}/move`, { folderId }),
+
+  createFolder: (name: string, category: string, companyId: number) =>
+    apiClient.post('/documents/folders', { name, category, companyId }),
+
   delete: (id: number) => apiClient.delete(`/documents/${id}`),
 
   deleteFolder: (id: number) => apiClient.delete(`/documents/folders/${id}`),
@@ -263,6 +269,16 @@ export const sharesApi = {
     documentId: number,
     payload: { visibility: 'public' | 'private'; email?: string; expiresInMinutes?: number }
   ) => apiClient.post(`/shares/document/${documentId}`, payload),
+
+  createFolderShare: (
+    folderId: number,
+    payload: { visibility: 'public' | 'private'; email?: string; expiresInMinutes?: number }
+  ) => apiClient.post(`/shares/folder/${folderId}`, payload),
+
+  createMultipleShare: (
+    documentIds: number[],
+    payload: { visibility: 'public' | 'private'; email?: string; expiresInMinutes?: number }
+  ) => apiClient.post('/shares/multiple', { ...payload, documentIds }),
 
   getByToken: (token: string) => apiClient.get(`/shares/${token}`),
 

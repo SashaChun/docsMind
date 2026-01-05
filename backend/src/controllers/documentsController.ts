@@ -435,4 +435,80 @@ export const documentsController = {
       });
     }
   },
+
+  async moveToFolder(req: AuthRequest, res: Response) {
+    try {
+      const documentId = parseInt(req.params.id, 10);
+      const { folderId } = req.body;
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const document = await documentsService.moveDocumentToFolder(
+        documentId,
+        req.userId,
+        folderId === undefined ? null : folderId
+      );
+
+      res.json({
+        success: true,
+        data: document,
+      });
+    } catch (error: any) {
+      logger.error('Move to folder controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  validateCreateFolder: [
+    body('name').notEmpty().withMessage('Folder name is required'),
+    body('category').notEmpty().withMessage('Category is required'),
+    body('companyId').isInt().withMessage('Valid company ID is required'),
+  ],
+
+  async createFolder(req: AuthRequest, res: Response) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: errors.array(),
+        });
+      }
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const folder = await documentsService.createFolder(req.userId, {
+        name: req.body.name,
+        category: req.body.category,
+        companyId: parseInt(req.body.companyId, 10),
+      });
+
+      res.status(201).json({
+        success: true,
+        data: folder,
+      });
+    } catch (error: any) {
+      logger.error('Create folder controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
 };
