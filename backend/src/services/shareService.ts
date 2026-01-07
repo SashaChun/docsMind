@@ -57,7 +57,9 @@ export const shareService = {
       }
 
       const type: ShareType = visibility === 'public' ? 'document_public' : 'document_private';
-      const minutes = expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24;
+      // -1 означає безлімітний термін (100 років)
+      const isUnlimited = expiresInMinutes === -1;
+      const minutes = isUnlimited ? 60 * 24 * 365 * 100 : (expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24 * 365 * 100);
       const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
       const token = crypto.randomBytes(32).toString('hex');
 
@@ -208,7 +210,9 @@ export const shareService = {
       }
 
       const type: ShareType = visibility === 'public' ? 'folder_public' : 'folder_private';
-      const minutes = expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24;
+      // -1 означає безлімітний термін (100 років)
+      const isUnlimited = expiresInMinutes === -1;
+      const minutes = isUnlimited ? 60 * 24 * 365 * 100 : (expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24 * 365 * 100);
       const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
       const token = crypto.randomBytes(32).toString('hex');
 
@@ -269,7 +273,9 @@ export const shareService = {
       }
 
       const type: ShareType = visibility === 'public' ? 'multiple_public' : 'multiple_private';
-      const minutes = expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24;
+      // -1 означає безлімітний термін (100 років)
+      const isUnlimited = expiresInMinutes === -1;
+      const minutes = isUnlimited ? 60 * 24 * 365 * 100 : (expiresInMinutes && expiresInMinutes > 0 ? expiresInMinutes : 60 * 24 * 365 * 100);
       const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
       const token = crypto.randomBytes(32).toString('hex');
 

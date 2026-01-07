@@ -15,8 +15,8 @@ export const shareController = {
     body('email').optional().isEmail().withMessage('Invalid email'),
     body('expiresInMinutes')
       .optional()
-      .isInt({ min: 1, max: 60 * 24 * 30 })
-      .withMessage('expiresInMinutes must be between 1 minute and 30 days'),
+      .isInt({ min: -1, max: 60 * 24 * 365 })
+      .withMessage('expiresInMinutes must be -1 (unlimited) or between 1 minute and 1 year'),
   ],
 
   async createDocumentShare(req: AuthRequest, res: Response) {
@@ -193,8 +193,8 @@ export const shareController = {
     body('email').optional().isEmail().withMessage('Invalid email'),
     body('expiresInMinutes')
       .optional()
-      .isInt({ min: 1, max: 60 * 24 * 30 })
-      .withMessage('expiresInMinutes must be between 1 minute and 30 days'),
+      .isInt({ min: -1, max: 60 * 24 * 365 })
+      .withMessage('expiresInMinutes must be -1 (unlimited) or between 1 minute and 1 year'),
   ],
 
   async createFolderShare(req: AuthRequest, res: Response) {
@@ -253,8 +253,8 @@ export const shareController = {
     body('email').optional().isEmail().withMessage('Invalid email'),
     body('expiresInMinutes')
       .optional()
-      .isInt({ min: 1, max: 60 * 24 * 30 })
-      .withMessage('expiresInMinutes must be between 1 minute and 30 days'),
+      .isInt({ min: -1, max: 60 * 24 * 365 })
+      .withMessage('expiresInMinutes must be -1 (unlimited) or between 1 minute and 1 year'),
   ],
 
   async createMultipleShare(req: AuthRequest, res: Response) {

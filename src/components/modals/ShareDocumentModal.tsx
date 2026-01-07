@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { X, Link2, Mail, Globe } from 'lucide-react';
+import { X, Mail, Globe, Clock } from 'lucide-react';
 import type { Document } from '../../types';
 import { sharesApi } from '../../services/api.ts';
 
@@ -9,9 +9,21 @@ interface ShareDocumentModalProps {
   document: Document | null;
 }
 
+const EXPIRATION_OPTIONS = [
+  { value: -1, label: 'Безлімітно' },
+  { value: 60, label: '1 година' },
+  { value: 1440, label: '24 години' },
+  { value: 10080, label: '7 днів' },
+  { value: 43200, label: '30 днів' },
+  { value: 0, label: 'Власний час...' },
+];
+
 export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentModalProps) => {
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [email, setEmail] = useState('');
+  const [expiresInMinutes, setExpiresInMinutes] = useState(-1);
+  const [customDays, setCustomDays] = useState('');
+  const [customHours, setCustomHours] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [link, setLink] = useState('');
@@ -32,7 +44,22 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
     setLoading(true);
 
     try {
-      const payload: { visibility: 'public' | 'private'; email?: string } = { visibility };
+      let finalExpiration = expiresInMinutes;
+      if (expiresInMinutes === 0) {
+        // Власний час
+        const days = parseInt(customDays) || 0;
+        const hours = parseInt(customHours) || 0;
+        if (days === 0 && hours === 0) {
+          setError('Вкажіть час дії посилання');
+          return;
+        }
+        finalExpiration = days * 24 * 60 + hours * 60;
+      }
+
+      const payload: { visibility: 'public' | 'private'; email?: string; expiresInMinutes: number } = {
+        visibility,
+        expiresInMinutes: finalExpiration
+      };
       if (visibility === 'private') {
         payload.email = email.trim();
       }
@@ -70,6 +97,9 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
     setLink('');
     setEmail('');
     setVisibility('public');
+    setExpiresInMinutes(-1);
+    setCustomDays('');
+    setCustomHours('');
     setCopySuccess(false);
     onClose();
   };
@@ -120,6 +150,50 @@ export const ShareDocumentModal = ({ isOpen, onClose, document }: ShareDocumentM
             >
               <Mail size={14} /> Приватний (по email)
             </button>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              <Clock size={12} className="inline mr-1" />
+              Термін дії посилання
+            </label>
+            <select
+              value={expiresInMinutes}
+              onChange={(e) => setExpiresInMinutes(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none bg-white"
+            >
+              {EXPIRATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {expiresInMinutes === 0 && (
+              <div className="flex gap-2 mt-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none"
+                    placeholder="Днів"
+                  />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={customHours}
+                    onChange={(e) => setCustomHours(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none"
+                    placeholder="Годин"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {visibility === 'private' && (
