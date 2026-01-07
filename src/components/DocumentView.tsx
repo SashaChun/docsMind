@@ -293,6 +293,7 @@ export const DocumentView = () => {
               ) : (
                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
                   Попередній перегляд недоступний
+
                 </div>
               )}
             </section>
