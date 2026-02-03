@@ -17,6 +17,8 @@ interface DocumentsListProps {
   onDeleteFolder?: (folder: FolderType) => void;
   onMoveToFolder?: (documentId: number, folderId: number | null) => void;
   onCreateFolder?: (name: string, category: string) => void;
+  onRenameDocument?: (documentId: number, newName: string) => Promise<void>;
+  onRenameFolder?: (folderId: number, newName: string) => Promise<void>;
 }
 
 const CATEGORIES = [
@@ -87,6 +89,8 @@ export const DocumentsList = ({
   onDeleteFolder,
   onMoveToFolder,
   onCreateFolder,
+  onRenameDocument,
+  onRenameFolder,
 }: DocumentsListProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
   const [draggedDocId, setDraggedDocId] = useState<number | null>(null);
