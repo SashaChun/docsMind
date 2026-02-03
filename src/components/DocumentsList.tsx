@@ -501,6 +501,16 @@ export const DocumentsList = ({
               </p>
             </div>
             <div className="flex gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditing(folder.id, folder.name, 'folder');
+                }}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1"
+                title="Перейменувати папку"
+              >
+                <Edit2 size={14} />
+              </button>
               {onShareFolder && (
                 <button
                   onClick={(e) => {
