@@ -91,13 +91,6 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  async patch<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    });
-  }
-
   async uploadFile<T>(
     endpoint: string,
     file: File,
@@ -271,26 +264,42 @@ export const documentsApi = {
   delete: (id: number) => apiClient.delete(`/documents/${id}`),
 
   deleteFolder: (id: number) => apiClient.delete(`/documents/folders/${id}`),
+};
 
-  renameDocument: async (documentId: number, newName: string): Promise<Document> => {
-    const response = await apiClient.patch<Document>(`/documents/${documentId}/rename`, {
-      name: newName,
-    });
-    if (!response.success || !response.data) {
-      throw new Error(response.error || 'Failed to rename document');
-    }
-    return response.data;
-  },
+export const renameDocument = async (documentId: number, newName: string): Promise<Document> => {
+  const response = await fetch(`/api/documents/${documentId}/rename`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify({ name: newName }),
+  });
 
-  renameFolder: async (folderId: number, newName: string): Promise<Folder> => {
-    const response = await apiClient.patch<Folder>(`/documents/folders/${folderId}/rename`, {
-      name: newName,
-    });
-    if (!response.success || !response.data) {
-      throw new Error(response.error || 'Failed to rename folder');
-    }
-    return response.data;
-  },
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Помилка перейменування документа');
+  }
+
+  return response.json();
+};
+
+export const renameFolder = async (folderId: number, newName: string): Promise<Folder> => {
+  const response = await fetch(`/api/folders/${folderId}/rename`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify({ name: newName }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Помилка перейменування папки');
+  }
+
+  return response.json();
 };
 
 export const sharesApi = {
