@@ -267,7 +267,7 @@ export const documentsApi = {
 };
 
 export const renameDocument = async (documentId: number, newName: string): Promise<Document> => {
-  const response = await fetch(`/api/documents/${documentId}/rename`, {
+  const response = await fetch(`${API_URL}/documents/${documentId}/rename`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ export const renameDocument = async (documentId: number, newName: string): Promi
 };
 
 export const renameFolder = async (folderId: number, newName: string): Promise<Folder> => {
-  const response = await fetch(`/api/documents/folders/${folderId}/rename`, {
+  const response = await fetch(`${API_URL}/documents/folders/${folderId}/rename`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
