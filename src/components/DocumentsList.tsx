@@ -28,17 +28,6 @@ const CATEGORIES = [
   { value: 'personal' as const, label: 'Особисті' },
 ];
 
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'tax':
-      return 'bg-green-50 text-green-600';
-    case 'statutory':
-      return 'bg-purple-50 text-purple-600';
-    default:
-      return 'bg-blue-50 text-blue-600';
-  }
-};
-
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
 
