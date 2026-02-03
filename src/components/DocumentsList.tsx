@@ -359,12 +359,31 @@ export const DocumentsList = ({
             );
           })()}
           <div className="flex-1 min-w-0">
-            <h4
-              className="font-medium text-slate-800 truncate"
-              title={doc.name}
-            >
-              {doc.name}
-            </h4>
+            {editingItemId === doc.id && editingItemType === 'document' ? (
+              <div>
+                <input
+                  type="text"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleSaveRename}
+                  className="w-full font-medium text-slate-800 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none bg-blue-50"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+                {editingError && (
+                  <div className="text-xs text-red-600 mt-1">{editingError}</div>
+                )}
+              </div>
+            ) : (
+              <h4
+                className="font-medium text-slate-800 truncate cursor-text"
+                title={doc.name}
+                onDoubleClick={() => !isSelectionMode && startEditing(doc.id, doc.name, 'document')}
+              >
+                {doc.name}
+              </h4>
+            )}
             <p className="text-xs text-slate-400 mt-0.5">
               {new Date(doc.createdAt).toLocaleDateString()}
             </p>
