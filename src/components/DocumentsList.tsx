@@ -212,6 +212,46 @@ export const DocumentsList = ({
     }
   };
 
+  const validateRename = (newName: string, id: number, type: 'document' | 'folder'): string | null => {
+    // Перевірка на порожню назву
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      return "Назва не може бути порожньою";
+    }
+
+    // Перевірка символів
+    const validPattern = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s_-]+$/;
+    if (!validPattern.test(trimmed)) {
+      return "Назва містить заборонені символи. Дозволені: літери, цифри, пробіли, дефіси, підкреслення";
+    }
+
+    // Перевірка дублікатів
+    if (type === 'document') {
+      const doc = documents.find(d => d.id === id);
+      const duplicates = documents.filter(d =>
+        d.id !== id &&
+        d.name === trimmed &&
+        d.folderId === doc?.folderId &&
+        d.category === doc?.category
+      );
+      if (duplicates.length > 0) {
+        return "Документ з такою назвою вже існує";
+      }
+    } else {
+      const folder = folders.find(f => f.id === id);
+      const duplicates = folders.filter(f =>
+        f.id !== id &&
+        f.name === trimmed &&
+        f.category === folder?.category
+      );
+      if (duplicates.length > 0) {
+        return "Папка з такою назвою вже існує";
+      }
+    }
+
+    return null;
+  };
+
   const renderDocumentCard = (doc: Document, inFolder = false) => {
     const isDragging = draggedDocId === doc.id;
     const isSelected = selectedDocs.has(doc.id);
