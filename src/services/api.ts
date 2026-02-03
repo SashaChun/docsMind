@@ -271,7 +271,7 @@ export const renameDocument = async (documentId: number, newName: string): Promi
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
     },
     body: JSON.stringify({ name: newName }),
   });
@@ -289,7 +289,7 @@ export const renameFolder = async (folderId: number, newName: string): Promise<F
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
     },
     body: JSON.stringify({ name: newName }),
   });
