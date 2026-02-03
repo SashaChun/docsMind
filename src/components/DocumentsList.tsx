@@ -396,6 +396,18 @@ export const DocumentsList = ({
           >
             Перегляд
           </button>
+          {!isSelectionMode && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditing(doc.id, doc.name, 'document');
+              }}
+              className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1"
+              title="Перейменувати"
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
           {isEditableFile(doc) && (
             <button
               onClick={() => onEdit(doc)}
