@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2, Image, Film, File, Folder, ChevronDown, ChevronRight, FolderPlus, Check, X } from 'lucide-react';
+import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2, Image, Film, File, Folder, ChevronDown, ChevronRight, FolderPlus, Check, X, Edit2 } from 'lucide-react';
 import type { Document, CategoryType, Folder as FolderType } from '../types';
 
 interface DocumentsListProps {
@@ -17,6 +17,8 @@ interface DocumentsListProps {
   onDeleteFolder?: (folder: FolderType) => void;
   onMoveToFolder?: (documentId: number, folderId: number | null) => void;
   onCreateFolder?: (name: string, category: string) => void;
+  onRenameDocument?: (documentId: number, newName: string) => Promise<void>;
+  onRenameFolder?: (folderId: number, newName: string) => Promise<void>;
 }
 
 const CATEGORIES = [
@@ -25,17 +27,6 @@ const CATEGORIES = [
   { value: 'tax' as const, label: 'Податкова' },
   { value: 'personal' as const, label: 'Особисті' },
 ];
-
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'tax':
-      return 'bg-green-50 text-green-600';
-    case 'statutory':
-      return 'bg-purple-50 text-purple-600';
-    default:
-      return 'bg-blue-50 text-blue-600';
-  }
-};
 
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -87,6 +78,8 @@ export const DocumentsList = ({
   onDeleteFolder,
   onMoveToFolder,
   onCreateFolder,
+  onRenameDocument,
+  onRenameFolder,
 }: DocumentsListProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
   const [draggedDocId, setDraggedDocId] = useState<number | null>(null);
@@ -95,6 +88,10 @@ export const DocumentsList = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingItemType, setEditingItemType] = useState<'document' | 'folder' | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [editingError, setEditingError] = useState('');
 
   const filteredDocs =
     activeCategory === 'all'
@@ -204,6 +201,111 @@ export const DocumentsList = ({
     }
   };
 
+  const validateRename = (newName: string, id: number, type: 'document' | 'folder'): string | null => {
+    // Перевірка на порожню назву
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      return "Назва не може бути порожньою";
+    }
+
+    // Перевірка символів
+    const validPattern = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s_-]+$/;
+    if (!validPattern.test(trimmed)) {
+      return "Назва містить заборонені символи. Дозволені: літери, цифри, пробіли, дефіси, підкреслення";
+    }
+
+    // Перевірка дублікатів
+    if (type === 'document') {
+      const doc = documents.find(d => d.id === id);
+      const duplicates = documents.filter(d =>
+        d.id !== id &&
+        d.name === trimmed &&
+        d.folderId === doc?.folderId &&
+        d.category === doc?.category
+      );
+      if (duplicates.length > 0) {
+        return "Документ з такою назвою вже існує";
+      }
+    } else {
+      const folder = folders.find(f => f.id === id);
+      const duplicates = folders.filter(f =>
+        f.id !== id &&
+        f.name === trimmed &&
+        f.category === folder?.category
+      );
+      if (duplicates.length > 0) {
+        return "Папка з такою назвою вже існує";
+      }
+    }
+
+    return null;
+  };
+
+  const startEditing = (id: number, currentName: string, type: 'document' | 'folder') => {
+    setEditingItemId(id);
+    setEditingItemType(type);
+    setEditingValue(currentName);
+    setEditingError('');
+  };
+
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditingItemType(null);
+    setEditingValue('');
+    setEditingError('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditing();
+    }
+  };
+
+  const handleSaveRename = async () => {
+    if (!editingItemId || !editingItemType) return;
+
+    const error = validateRename(editingValue, editingItemId, editingItemType);
+    if (error) {
+      setEditingError(error);
+      return;
+    }
+
+    // Для документів - захист розширення
+    let finalName = editingValue.trim();
+    if (editingItemType === 'document') {
+      const doc = documents.find(d => d.id === editingItemId);
+      if (doc?.fileName) {
+        const originalExt = doc.fileName.split('.').pop();
+        const newExt = finalName.split('.').pop();
+
+        if (originalExt !== newExt) {
+          const nameWithoutExt = finalName.split('.').slice(0, -1).join('.');
+          finalName = `${nameWithoutExt}.${originalExt}`;
+          alert("Розширення файлу не можна змінити");
+        }
+      }
+    }
+
+    try {
+      // Викликати callback
+      if (editingItemType === 'document' && onRenameDocument) {
+        await onRenameDocument(editingItemId, finalName);
+      } else if (editingItemType === 'folder' && onRenameFolder) {
+        await onRenameFolder(editingItemId, finalName);
+      }
+
+      // Скинути стан після успішного збереження
+      cancelEditing();
+    } catch (error) {
+      // При помилці залишити поле відкритим
+      setEditingError(error instanceof Error ? error.message : 'Помилка збереження');
+    }
+  };
+
   const renderDocumentCard = (doc: Document, inFolder = false) => {
     const isDragging = draggedDocId === doc.id;
     const isSelected = selectedDocs.has(doc.id);
@@ -246,12 +348,31 @@ export const DocumentsList = ({
             );
           })()}
           <div className="flex-1 min-w-0">
-            <h4
-              className="font-medium text-slate-800 truncate"
-              title={doc.name}
-            >
-              {doc.name}
-            </h4>
+            {editingItemId === doc.id && editingItemType === 'document' ? (
+              <div>
+                <input
+                  type="text"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleSaveRename}
+                  className="w-full font-medium text-slate-800 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none bg-blue-50"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+                {editingError && (
+                  <div className="text-xs text-red-600 mt-1">{editingError}</div>
+                )}
+              </div>
+            ) : (
+              <h4
+                className="font-medium text-slate-800 truncate cursor-text"
+                title={doc.name}
+                onDoubleClick={() => !isSelectionMode && startEditing(doc.id, doc.name, 'document')}
+              >
+                {doc.name}
+              </h4>
+            )}
             <p className="text-xs text-slate-400 mt-0.5">
               {new Date(doc.createdAt).toLocaleDateString()}
             </p>
@@ -264,6 +385,18 @@ export const DocumentsList = ({
           >
             Перегляд
           </button>
+          {!isSelectionMode && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditing(doc.id, doc.name, 'document');
+              }}
+              className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1"
+              title="Перейменувати"
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
           {isEditableFile(doc) && (
             <button
               onClick={() => onEdit(doc)}
@@ -323,18 +456,50 @@ export const DocumentsList = ({
                 ) : (
                   <ChevronRight size={16} className="text-slate-400" />
                 )}
-                <h4
-                  className="font-medium text-slate-800 truncate"
-                  title={folder.name}
-                >
-                  {folder.name}
-                </h4>
+                {editingItemId === folder.id && editingItemType === 'folder' ? (
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onBlur={handleSaveRename}
+                      className="w-full font-medium text-slate-800 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none bg-blue-50"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {editingError && (
+                      <div className="text-xs text-red-600 mt-1">{editingError}</div>
+                    )}
+                  </div>
+                ) : (
+                  <h4
+                    className="font-medium text-slate-800 truncate cursor-text"
+                    title={folder.name}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(folder.id, folder.name, 'folder');
+                    }}
+                  >
+                    {folder.name}
+                  </h4>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 {folderDocs.length} файлів • {new Date(folder.createdAt).toLocaleDateString()}
               </p>
             </div>
             <div className="flex gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditing(folder.id, folder.name, 'folder');
+                }}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1"
+                title="Перейменувати папку"
+              >
+                <Edit2 size={14} />
+              </button>
               {onShareFolder && (
                 <button
                   onClick={(e) => {

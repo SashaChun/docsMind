@@ -28,6 +28,8 @@ interface DashboardProps {
   onDeleteFolder?: (folder: Folder) => void;
   onMoveDocToFolder?: (documentId: number, folderId: number | null) => void;
   onCreateFolder?: (name: string, category: string) => void;
+  onRenameDocument?: (documentId: number, newName: string) => Promise<void>;
+  onRenameFolder?: (folderId: number, newName: string) => Promise<void>;
 }
 
 export const Dashboard = ({
@@ -52,6 +54,8 @@ export const Dashboard = ({
   onDeleteFolder,
   onMoveDocToFolder,
   onCreateFolder,
+  onRenameDocument,
+  onRenameFolder,
 }: DashboardProps) => {
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
@@ -120,6 +124,8 @@ export const Dashboard = ({
               onDeleteFolder={onDeleteFolder}
               onMoveToFolder={onMoveDocToFolder}
               onCreateFolder={onCreateFolder}
+              onRenameDocument={onRenameDocument}
+              onRenameFolder={onRenameFolder}
             />
           </div>
         ) : null}
