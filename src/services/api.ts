@@ -1,3 +1,5 @@
+import type { Document, Folder } from '../types';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 interface ApiResponse<T> {
@@ -87,6 +89,13 @@ class ApiClient {
 
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  async patch<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
   }
 
   async uploadFile<T>(
@@ -262,6 +271,26 @@ export const documentsApi = {
   delete: (id: number) => apiClient.delete(`/documents/${id}`),
 
   deleteFolder: (id: number) => apiClient.delete(`/documents/folders/${id}`),
+
+  renameDocument: async (documentId: number, newName: string): Promise<Document> => {
+    const response = await apiClient.patch<Document>(`/documents/${documentId}/rename`, {
+      name: newName,
+    });
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to rename document');
+    }
+    return response.data;
+  },
+
+  renameFolder: async (folderId: number, newName: string): Promise<Folder> => {
+    const response = await apiClient.patch<Folder>(`/documents/folders/${folderId}/rename`, {
+      name: newName,
+    });
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to rename folder');
+    }
+    return response.data;
+  },
 };
 
 export const sharesApi = {
