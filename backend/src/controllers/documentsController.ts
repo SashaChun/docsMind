@@ -511,4 +511,90 @@ export const documentsController = {
       });
     }
   },
+
+  validateRenameDocument: [
+    body('name').notEmpty().withMessage('Document name is required'),
+  ],
+
+  async renameDocument(req: AuthRequest, res: Response) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: errors.array(),
+        });
+      }
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const documentId = parseInt(req.params.id, 10);
+      const document = await documentsService.renameDocument(
+        req.userId,
+        documentId,
+        req.body.name
+      );
+
+      res.json({
+        success: true,
+        data: document,
+      });
+    } catch (error: any) {
+      logger.error('Rename document controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  validateRenameFolder: [
+    body('name').notEmpty().withMessage('Folder name is required'),
+  ],
+
+  async renameFolder(req: AuthRequest, res: Response) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: errors.array(),
+        });
+      }
+
+      if (!req.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+      }
+
+      const folderId = parseInt(req.params.id, 10);
+      const folder = await documentsService.renameFolder(
+        req.userId,
+        folderId,
+        req.body.name
+      );
+
+      res.json({
+        success: true,
+        data: folder,
+      });
+    } catch (error: any) {
+      logger.error('Rename folder controller error:', error);
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
 };

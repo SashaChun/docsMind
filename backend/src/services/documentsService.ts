@@ -460,4 +460,66 @@ export const documentsService = {
       throw error;
     }
   },
+
+  async renameDocument(userId: number, documentId: number, newName: string) {
+    try {
+      const document = await prisma.document.findFirst({
+        where: {
+          id: documentId,
+          userId,
+        },
+      });
+
+      if (!document) {
+        const error = new Error('Document not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      const updatedDocument = await prisma.document.update({
+        where: { id: documentId },
+        data: {
+          name: newName,
+        },
+      });
+
+      logger.info(`Document renamed: ${document.name} -> ${newName}`);
+
+      return updatedDocument;
+    } catch (error: any) {
+      logger.error('Rename document error:', error);
+      throw error;
+    }
+  },
+
+  async renameFolder(userId: number, folderId: number, newName: string) {
+    try {
+      const folder = await prisma.folder.findFirst({
+        where: {
+          id: folderId,
+          userId,
+        },
+      });
+
+      if (!folder) {
+        const error = new Error('Folder not found');
+        (error as any).statusCode = 404;
+        throw error;
+      }
+
+      const updatedFolder = await prisma.folder.update({
+        where: { id: folderId },
+        data: {
+          name: newName,
+        },
+      });
+
+      logger.info(`Folder renamed: ${folder.name} -> ${newName}`);
+
+      return updatedFolder;
+    } catch (error: any) {
+      logger.error('Rename folder error:', error);
+      throw error;
+    }
+  },
 };

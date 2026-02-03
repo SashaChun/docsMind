@@ -36,6 +36,8 @@ router.get('/:id', documentsController.getById);
 router.get('/:id/file', documentsController.getFile);
 router.put('/:id/content', documentsController.updateContent);
 router.put('/:id/move', documentsController.moveToFolder);
+router.patch('/:id/rename', documentsController.validateRenameDocument, documentsController.renameDocument);
+router.patch('/folders/:id/rename', documentsController.validateRenameFolder, documentsController.renameFolder);
 router.delete('/:id', documentsController.delete);
 router.delete('/folders/:id', documentsController.deleteFolder);
 
