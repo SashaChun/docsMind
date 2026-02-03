@@ -252,6 +252,71 @@ export const DocumentsList = ({
     return null;
   };
 
+  const startEditing = (id: number, currentName: string, type: 'document' | 'folder') => {
+    setEditingItemId(id);
+    setEditingItemType(type);
+    setEditingValue(currentName);
+    setEditingError('');
+  };
+
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditingItemType(null);
+    setEditingValue('');
+    setEditingError('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditing();
+    }
+  };
+
+  const handleSaveRename = async () => {
+    if (!editingItemId || !editingItemType) return;
+
+    const error = validateRename(editingValue, editingItemId, editingItemType);
+    if (error) {
+      setEditingError(error);
+      return;
+    }
+
+    // Для документів - захист розширення
+    let finalName = editingValue.trim();
+    if (editingItemType === 'document') {
+      const doc = documents.find(d => d.id === editingItemId);
+      if (doc?.fileName) {
+        const originalExt = doc.fileName.split('.').pop();
+        const newExt = finalName.split('.').pop();
+
+        if (originalExt !== newExt) {
+          const nameWithoutExt = finalName.split('.').slice(0, -1).join('.');
+          finalName = `${nameWithoutExt}.${originalExt}`;
+          alert("Розширення файлу не можна змінити");
+        }
+      }
+    }
+
+    try {
+      // Викликати callback
+      if (editingItemType === 'document' && onRenameDocument) {
+        await onRenameDocument(editingItemId, finalName);
+      } else if (editingItemType === 'folder' && onRenameFolder) {
+        await onRenameFolder(editingItemId, finalName);
+      }
+
+      // Скинути стан після успішного збереження
+      cancelEditing();
+    } catch (error) {
+      // При помилці залишити поле відкритим
+      setEditingError(error instanceof Error ? error.message : 'Помилка збереження');
+    }
+  };
+
   const renderDocumentCard = (doc: Document, inFolder = false) => {
     const isDragging = draggedDocId === doc.id;
     const isSelected = selectedDocs.has(doc.id);
