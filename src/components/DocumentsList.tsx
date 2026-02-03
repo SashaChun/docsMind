@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2, Image, Film, File, Folder, ChevronDown, ChevronRight, FolderPlus, Check, X } from 'lucide-react';
+import { UploadCloud, FolderOpen, FileText, Share2, Edit, Trash2, Image, Film, File, Folder, ChevronDown, ChevronRight, FolderPlus, Check, X, Edit2 } from 'lucide-react';
 import type { Document, CategoryType, Folder as FolderType } from '../types';
 
 interface DocumentsListProps {
@@ -95,6 +95,10 @@ export const DocumentsList = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingItemType, setEditingItemType] = useState<'document' | 'folder' | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [editingError, setEditingError] = useState('');
 
   const filteredDocs =
     activeCategory === 'all'
