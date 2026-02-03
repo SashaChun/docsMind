@@ -467,12 +467,34 @@ export const DocumentsList = ({
                 ) : (
                   <ChevronRight size={16} className="text-slate-400" />
                 )}
-                <h4
-                  className="font-medium text-slate-800 truncate"
-                  title={folder.name}
-                >
-                  {folder.name}
-                </h4>
+                {editingItemId === folder.id && editingItemType === 'folder' ? (
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onBlur={handleSaveRename}
+                      className="w-full font-medium text-slate-800 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none bg-blue-50"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {editingError && (
+                      <div className="text-xs text-red-600 mt-1">{editingError}</div>
+                    )}
+                  </div>
+                ) : (
+                  <h4
+                    className="font-medium text-slate-800 truncate cursor-text"
+                    title={folder.name}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(folder.id, folder.name, 'folder');
+                    }}
+                  >
+                    {folder.name}
+                  </h4>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 {folderDocs.length} файлів • {new Date(folder.createdAt).toLocaleDateString()}
