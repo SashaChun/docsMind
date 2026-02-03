@@ -17,7 +17,7 @@ import { ShareMultipleModal } from './components/modals/ShareMultipleModal.tsx';
 import { DocumentView } from './components/DocumentView.tsx';
 import { ShareDocumentView } from './components/ShareDocumentView.tsx';
 import { DocumentEditor } from './components/DocumentEditor.tsx';
-import { companiesApi, documentsApi, apiClient } from './services/api.ts';
+import { companiesApi, documentsApi, apiClient, renameDocument, renameFolder } from './services/api.ts';
 import type { Company, Document, CategoryType, SharedData, Folder } from './types';
 
 function App() {
@@ -257,6 +257,32 @@ function App() {
     }
   };
 
+  const handleRenameDocument = async (documentId: number, newName: string) => {
+    try {
+      const updatedDoc = await renameDocument(documentId, newName);
+      setDocuments(prev =>
+        prev.map(doc => doc.id === documentId ? updatedDoc : doc)
+      );
+    } catch (error) {
+      console.error('Rename document error:', error);
+      alert(error instanceof Error ? error.message : 'Помилка перейменування документа');
+      throw error; // Re-throw щоб DocumentsList міг обробити помилку
+    }
+  };
+
+  const handleRenameFolder = async (folderId: number, newName: string) => {
+    try {
+      const updatedFolder = await renameFolder(folderId, newName);
+      setFolders(prev =>
+        prev.map(folder => folder.id === folderId ? updatedFolder : folder)
+      );
+    } catch (error) {
+      console.error('Rename folder error:', error);
+      alert(error instanceof Error ? error.message : 'Помилка перейменування папки');
+      throw error;
+    }
+  };
+
   const isAuthenticated = !!localStorage.getItem('accessToken');
 
   const RequireAuth = ({ children }: { children: JSX.Element }) => {
@@ -360,6 +386,8 @@ function App() {
                 onDeleteFolder={handleDeleteFolder}
                 onMoveDocToFolder={handleMoveDocToFolder}
                 onCreateFolder={handleCreateFolder}
+                onRenameDocument={handleRenameDocument}
+                onRenameFolder={handleRenameFolder}
               />
 
               <AddCompanyModal
