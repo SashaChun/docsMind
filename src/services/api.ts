@@ -87,6 +87,13 @@ class ApiClient {
     });
   }
 
+  async patch<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
+
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
@@ -266,40 +273,12 @@ export const documentsApi = {
   deleteFolder: (id: number) => apiClient.delete(`/documents/folders/${id}`),
 };
 
-export const renameDocument = async (documentId: number, newName: string): Promise<Document> => {
-  const response = await fetch(`/api/documents/${documentId}/rename`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify({ name: newName }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Помилка перейменування документа');
-  }
-
-  return response.json();
+export const renameDocument = async (documentId: number, newName: string): Promise<ApiResponse<Document>> => {
+  return apiClient.patch(`/documents/${documentId}/rename`, { name: newName });
 };
 
-export const renameFolder = async (folderId: number, newName: string): Promise<Folder> => {
-  const response = await fetch(`/api/documents/folders/${folderId}/rename`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify({ name: newName }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Помилка перейменування папки');
-  }
-
-  return response.json();
+export const renameFolder = async (folderId: number, newName: string): Promise<ApiResponse<Folder>> => {
+  return apiClient.patch(`/documents/folders/${folderId}/rename`, { name: newName });
 };
 
 export const sharesApi = {

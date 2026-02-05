@@ -22,7 +22,7 @@ app.use((req, res, next) => {
   res.header('Referrer-Policy', 'no-referrer-when-downgrade');
   res.header('Access-Control-Allow-Origin', env.FRONTEND_URL);
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
@@ -30,7 +30,7 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: env.FRONTEND_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400,
 }));

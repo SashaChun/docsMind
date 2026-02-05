@@ -259,10 +259,14 @@ function App() {
 
   const handleRenameDocument = async (documentId: number, newName: string) => {
     try {
-      const updatedDoc = await renameDocument(documentId, newName);
-      setDocuments(prev =>
-        prev.map(doc => doc.id === documentId ? updatedDoc : doc)
-      );
+      const response = await renameDocument(documentId, newName);
+      if (response.success && response.data) {
+        setDocuments(prev =>
+          prev.map(doc => doc.id === documentId ? response.data! : doc)
+        );
+      } else {
+        throw new Error(response.error || 'Помилка перейменування документа');
+      }
     } catch (error) {
       console.error('Rename document error:', error);
       alert(error instanceof Error ? error.message : 'Помилка перейменування документа');
@@ -272,10 +276,14 @@ function App() {
 
   const handleRenameFolder = async (folderId: number, newName: string) => {
     try {
-      const updatedFolder = await renameFolder(folderId, newName);
-      setFolders(prev =>
-        prev.map(folder => folder.id === folderId ? updatedFolder : folder)
-      );
+      const response = await renameFolder(folderId, newName);
+      if (response.success && response.data) {
+        setFolders(prev =>
+          prev.map(folder => folder.id === folderId ? response.data! : folder)
+        );
+      } else {
+        throw new Error(response.error || 'Помилка перейменування папки');
+      }
     } catch (error) {
       console.error('Rename folder error:', error);
       alert(error instanceof Error ? error.message : 'Помилка перейменування папки');
